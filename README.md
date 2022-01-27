@@ -33,10 +33,10 @@ jsonb_push_object(&b, buf, sizeof(buf));
         jsonb_push_string(&b, "hi", 2, buf, sizeof(buf));
         jsonb_push_bool(&b, 0, buf, sizeof(buf));
         jsonb_push_null(&b, buf, sizeof(buf));
+        json_pop_array(&b, buf, sizeof(buf));
     }
-    json_pop_array(&b, buf, sizeof(buf));
+    jsonb_pop_object(&b, buf, sizeof(buf));
 }
-jsonb_pop_object(&b, buf, sizeof(buf));
 
 printf("JSON: %s", buf); // JSON: {"foo":[1,"hi",false,null]}
 ```

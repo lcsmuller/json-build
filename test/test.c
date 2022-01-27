@@ -23,8 +23,8 @@ main(void)
         jsonb_push_array(&b, buf, sizeof(buf));
         {
             jsonb_push_token(&b, "10", 2, buf, sizeof(buf));
+            jsonb_pop_array(&b, buf, sizeof(buf));
         }
-        jsonb_pop_array(&b, buf, sizeof(buf));
         jsonb_push_key(&b, "obj", 3, buf, sizeof(buf));
         jsonb_push_object(&b, buf, sizeof(buf));
         {
@@ -42,16 +42,16 @@ main(void)
                     jsonb_push_array(&b, buf, sizeof(buf));
                     {
                         jsonb_push_null(&b, buf, sizeof(buf));
+                        jsonb_pop_array(&b, buf, sizeof(buf));
                     }
                     jsonb_pop_array(&b, buf, sizeof(buf));
                 }
                 jsonb_pop_array(&b, buf, sizeof(buf));
             }
-            jsonb_pop_array(&b, buf, sizeof(buf));
+            jsonb_pop_object(&b, buf, sizeof(buf));
         }
         jsonb_pop_object(&b, buf, sizeof(buf));
     }
-    jsonb_pop_object(&b, buf, sizeof(buf));
 
     fprintf(stderr, "%s\n", buf);
 
