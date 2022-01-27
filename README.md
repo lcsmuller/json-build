@@ -7,7 +7,7 @@ Features
 --------
 
 * compatible with C89
-* no dependencies (even libc!)
+* no dependencies
 * no dynamic memory allocation
 
 Usage
@@ -28,19 +28,31 @@ jsonb_push_object(&b, buf, sizeof(buf));
     jsonb_push_key(&b, "foo", strlen("foo"), buf, sizeof(buf));
     jsonb_push_array(&b, buf, sizeof(buf));
     {
-        jsonb_push_value(&b, "1", 1, buf, sizeof(buf));
-        jsonb_push_value(&b, "10", 2, buf, sizeof(buf));
-        jsonb_push_value(&b, "100", 3, buf, sizeof(buf));
+        jsonb_push_token(&b, "1", 1, buf, sizeof(buf));
+        jsonb_push_string(&b, "hi", 2, buf, sizeof(buf));
+        jsonb_push_bool(&b, 0, buf, sizeof(buf));
+        jsonb_push_null(&b, buf, sizeof(buf));
     }
     json_pop_array(&b, buf, sizeof(buf));
 }
 jsonb_pop_object(&b, buf, sizeof(buf));
 
-printf("JSON: %s", buf); // JSON: {"foo":[1,10,100]}
+printf("JSON: %s", buf); // JSON: {"foo":[1,"hi",false,null]}
 ```
 
 API
 ---
+
+* `jsonb_init()` - initialize a jsonb handle
+* `jsonb_push_object()` - push an object to the builder stack
+* `jsonb_pop_object()` - pop an object from the builder stack
+* `jsonb_push_key()` - push an object key field to the builder stack
+* `jsonb_push_array()` - push an array to the builder stack
+* `jsonb_pop_object()` - pop an array from the builder stack
+* `jsonb_push_token()` - push a raw token to the builder stack
+* `jsonb_push_bool()` - push a boolean token to the builder stack
+* `jsonb_push_null()` - push a null token to the builder stack
+* `jsonb_push_string()` - push a string token to the builder stack
 
 The following are the possible return values for the builder functions:
 * `JSONB_OK` - everything went as expected, user can proceed

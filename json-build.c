@@ -182,13 +182,13 @@ jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize)
 }
 
 int
-jsonb_push_value(
-    jsonb *builder, const char value[], size_t len, char buf[], size_t bufsize)
+jsonb_push_token(
+    jsonb *builder, const char token[], size_t len, char buf[], size_t bufsize)
 {
     switch (*builder->st_top) {
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         EXPECT_LEN(builder, len, bufsize);
-        BUFFER_COPY(builder, value, len, buf, bufsize);
+        BUFFER_COPY(builder, token, len, buf, bufsize);
         STACK_POP(builder);
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
@@ -197,12 +197,12 @@ jsonb_push_value(
         /* fall-through */
     case JSONB_ARRAY_VALUE_OR_CLOSE:
         EXPECT_LEN(builder, len, bufsize);
-        BUFFER_COPY(builder, value, len, buf, bufsize);
+        BUFFER_COPY(builder, token, len, buf, bufsize);
         STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
         break;
     case JSONB_OBJECT_VALUE:
         EXPECT_LEN(builder, len, bufsize);
-        BUFFER_COPY(builder, value, len, buf, bufsize);
+        BUFFER_COPY(builder, token, len, buf, bufsize);
         STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
         break;
     default:
@@ -210,4 +210,33 @@ jsonb_push_value(
         return JSONB_ERROR_INPUT;
     }
     return JSONB_OK;
+}
+
+int
+jsonb_push_bool(jsonb *builder, int boolean, char buf[], size_t bufsize)
+{
+    int ret;
+    if (boolean)
+        ret = jsonb_push_token(builder, "true", 4, buf, bufsize);
+    else
+        ret = jsonb_push_token(builder, "false", 5, buf, bufsize);
+    return ret;
+}
+
+int
+jsonb_push_null(jsonb *builder, char buf[], size_t bufsize)
+{
+    return jsonb_push_token(builder, "null", 4, buf, bufsize);
+}
+
+int
+jsonb_push_string(
+    jsonb *builder, char str[], size_t len, char buf[], size_t bufsize)
+{
+    int ret;
+    EXPECT_LEN(builder, len + 2, bufsize);
+    BUFFER_COPY_CHAR(builder, '"', buf, bufsize);
+    ret = jsonb_push_token(builder, str, len, buf, bufsize);
+    BUFFER_COPY_CHAR(builder, '"', buf, bufsize);
+    return ret;
 }
