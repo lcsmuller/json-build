@@ -1,7 +1,8 @@
 JSON-BUILD
 ==========
 
-json-build is a zero-allocation JSON serializer made in C.
+json-build is a zero-allocation JSON serializer compatible with C89. It is
+inspired by [jsmn](https://github.com/zserge/jsmn), a minimalistic JSON deserializer.
 
 Features
 --------
@@ -13,7 +14,7 @@ Features
 Usage
 -----
 
-Download `json-build.c` and `json-build.h`.
+Download `json-build.h`, include it, done.
 
 ```c
 #include "json-build.h"
@@ -40,6 +41,20 @@ jsonb_pop_object(&b, buf, sizeof(buf));
 printf("JSON: %s", buf); // JSON: {"foo":[1,"hi",false,null]}
 ```
 
+Since json-build is a single-header, header-only library, for more complex use
+cases you might need to define additional macros. `#define JSONB_STATIC`hides all
+json-build API symbols by making them static. Also, if you want to include `json-build.h`
+for multiple C files, to avoid duplication of symbols you may define `JSONB_HEADER` macro.
+
+```c
+/* In every .c file that uses json-build include only declarations: */
+#define JSONB_HEADER
+#include "json-build.h"
+
+/* Additionally, create one json-build.c file for json-build implementation: */
+#include "json-build.h"
+```
+
 API
 ---
 
@@ -61,3 +76,9 @@ The following are the possible return values for the builder functions:
 
 If you get `JSONB_ERROR_NOMEM` you can re-allocate a larger buffer and call
 the builder function once more.
+
+Other info
+----------
+
+This software is distributed under [MIT license](www.opensource.org/licenses/mit-license.php),
+so feel free to integrate it in your commercial products.
