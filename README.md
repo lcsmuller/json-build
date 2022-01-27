@@ -48,7 +48,7 @@ API
 * `jsonb_pop_object()` - pop an object from the builder stack
 * `jsonb_push_key()` - push an object key field to the builder stack
 * `jsonb_push_array()` - push an array to the builder stack
-* `jsonb_pop_object()` - pop an array from the builder stack
+* `jsonb_pop_array()` - pop an array from the builder stack
 * `jsonb_push_token()` - push a raw token to the builder stack
 * `jsonb_push_bool()` - push a boolean token to the builder stack
 * `jsonb_push_null()` - push a null token to the builder stack
