@@ -3,7 +3,7 @@ CC ?= gcc
 
 EXES := test
 
-CFLAGS += -Wall -Wextra -Wpedantic -std=c89 -g -I$(TOP)
+CFLAGS += -Wall -Wextra -Wpedantic -g -I$(TOP)
 
 all: $(EXES)
 

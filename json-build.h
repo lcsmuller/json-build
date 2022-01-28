@@ -33,8 +33,8 @@ enum jsonb_state {
     JSONB_INIT = 0,
     JSONB_ARRAY_OR_OBJECT_OR_VALUE = JSONB_INIT,
     JSONB_OBJECT_KEY_OR_CLOSE,
-    JSONB_OBJECT_NEXT_KEY_OR_CLOSE,
     JSONB_OBJECT_VALUE,
+    JSONB_OBJECT_NEXT_KEY_OR_CLOSE,
     JSONB_ARRAY_VALUE_OR_CLOSE,
     JSONB_ARRAY_NEXT_VALUE_OR_CLOSE,
     JSONB_ERROR,
@@ -49,8 +49,6 @@ typedef struct jsonb {
     enum jsonb_state *st_top;
     /** offset in the JSON buffer (current length) */
     unsigned int pos;
-    /** next token to allocate */
-    unsigned int toknext;
 } jsonb;
 
 /**
@@ -176,9 +174,9 @@ JSONB_API int jsonb_push_string(
     jsonb *builder, char str[], size_t len, char buf[], size_t bufsize);
 
 #ifndef JSONB_HEADER
-#ifndef _JSONB_DEBUG
+#ifndef JSONB_DEBUG
+#define TRACE(prev, next) next
 #define DECORATOR(a)
-#define TRACE(st) st
 #else
 #include <stdio.h>
 static const char *
@@ -205,29 +203,34 @@ _jsonb_eval_state(enum jsonb_state state)
         return "unknown";
     }
 }
-#define DECORATOR(d)  d
-#define TRACE(st_top) fprintf(stderr, "%s\n", _jsonb_eval_state(st_top))
-#endif /* _JSONB_DEBUG */
-
-#define STACK_PUSH(jsonb, state) TRACE(*++(jsonb)->st_top = (state))
-#define STACK_POP(jsonb)         TRACE(DECORATOR(*)--(jsonb)->st_top)
-#define STACK_HEAD(jsonb, state) TRACE(*(jsonb)->st_top = (state))
-
-#define BUFFER_COPY_CHAR(jsonb, c, _pos, buf, bufsize)                        \
+#define TRACE(prev, next)                                                     \
     do {                                                                      \
-        if ((jsonb)->pos + (_pos) + 1 > (bufsize)) {                          \
+        enum jsonb_state _prev = prev, _next = next;                          \
+        fprintf(stderr, "%s():L%d|%s -> %s\n", __func__, __LINE__,            \
+                _jsonb_eval_state(_prev), _jsonb_eval_state(_next));          \
+    } while (0)
+#define DECORATOR(d) d
+#endif /* JSONB_DEBUG */
+
+#define STACK_PUSH(b, state) TRACE(*(b)->st_top, *++(b)->st_top = (state))
+#define STACK_POP(b)         TRACE(*(b)->st_top, DECORATOR(*)--(b)->st_top)
+#define STACK_HEAD(b, state) TRACE(*(b)->st_top, *(b)->st_top = (state))
+
+#define BUFFER_COPY_CHAR(b, c, _pos, buf, bufsize)                            \
+    do {                                                                      \
+        if ((b)->pos + (_pos) + 1 > (bufsize)) {                              \
             return JSONB_ERROR_NOMEM;                                         \
         }                                                                     \
-        (buf)[(jsonb)->pos + (_pos)++] = (c);                                 \
+        (buf)[(b)->pos + (_pos)++] = (c);                                     \
     } while (0)
-#define BUFFER_COPY(jsonb, value, len, _pos, buf, bufsize)                    \
+#define BUFFER_COPY(b, value, len, _pos, buf, bufsize)                        \
     do {                                                                      \
         size_t i;                                                             \
-        if ((jsonb)->pos + (_pos) + (len) > (bufsize)) {                      \
+        if ((b)->pos + (_pos) + (len) > (bufsize)) {                          \
             return JSONB_ERROR_NOMEM;                                         \
         }                                                                     \
         for (i = 0; i < (len); ++i)                                           \
-            (buf)[(jsonb)->pos + (_pos) + i] = (value)[i];                    \
+            (buf)[(b)->pos + (_pos) + i] = (value)[i];                        \
         (_pos) += (len);                                                      \
     } while (0)
 
@@ -250,10 +253,13 @@ jsonb_push_object(jsonb *builder, char buf[], size_t bufsize)
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_OBJECT_VALUE:
-        STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+    case JSONB_ARRAY_VALUE_OR_CLOSE:
+        if (*builder->st_top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
+            STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+        else if (*builder->st_top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
+            STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
         /* fall-through */
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-    case JSONB_ARRAY_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, '{', pos, buf, bufsize);
         STACK_PUSH(builder, JSONB_OBJECT_KEY_OR_CLOSE);
         break;
@@ -315,10 +321,13 @@ jsonb_push_array(jsonb *builder, char buf[], size_t bufsize)
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_OBJECT_VALUE:
-        STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+    case JSONB_ARRAY_VALUE_OR_CLOSE:
+        if (*builder->st_top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
+            STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+        else if (*builder->st_top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
+            STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
         /* fall-through */
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-    case JSONB_ARRAY_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, '[', pos, buf, bufsize);
         STACK_PUSH(builder, JSONB_ARRAY_VALUE_OR_CLOSE);
         break;

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#define JSONB_DEBUG
 #include "json-build.h"
 
 int
@@ -41,7 +42,41 @@ main(void)
                 {
                     jsonb_push_array(&b, buf, sizeof(buf));
                     {
-                        jsonb_push_null(&b, buf, sizeof(buf));
+                        jsonb_push_object(&b, buf, sizeof(buf));
+                        {
+                            jsonb_push_key(&b, "a", 1, buf, sizeof(buf));
+                            jsonb_push_object(&b, buf, sizeof(buf));
+                            {
+                                jsonb_push_key(&b, "b", 1, buf, sizeof(buf));
+                                jsonb_push_object(&b, buf, sizeof(buf));
+                                {
+                                    jsonb_pop_object(&b, buf, sizeof(buf));
+                                }
+                                jsonb_pop_object(&b, buf, sizeof(buf));
+                            }
+                            jsonb_pop_object(&b, buf, sizeof(buf));
+                        }
+                        jsonb_push_object(&b, buf, sizeof(buf));
+                        {
+                            jsonb_push_key(&b, "a", 1, buf, sizeof(buf));
+                            jsonb_push_array(&b, buf, sizeof(buf));
+                            {
+                                jsonb_push_array(&b, buf, sizeof(buf));
+                                {
+                                    jsonb_pop_array(&b, buf, sizeof(buf));
+                                }
+                                jsonb_push_array(&b, buf, sizeof(buf));
+                                {
+                                    jsonb_pop_array(&b, buf, sizeof(buf));
+                                }
+                                jsonb_pop_array(&b, buf, sizeof(buf));
+                            }
+                            jsonb_pop_object(&b, buf, sizeof(buf));
+                        }
+                        jsonb_push_object(&b, buf, sizeof(buf));
+                        {
+                            jsonb_pop_object(&b, buf, sizeof(buf));
+                        }
                         jsonb_pop_array(&b, buf, sizeof(buf));
                     }
                     jsonb_pop_array(&b, buf, sizeof(buf));
