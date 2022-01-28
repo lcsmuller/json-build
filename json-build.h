@@ -20,8 +20,6 @@ extern "C" {
 
 /** @brief json-builder error codes */
 enum jsonb_err {
-    /** everything went as expected */
-    JSONB_OK = 0,
     /** not enough tokens were provided */
     JSONB_ERROR_NOMEM = -1,
     /** token doesn't match expected value */
@@ -64,10 +62,10 @@ JSONB_API void jsonb_init(jsonb *builder);
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_object(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API long jsonb_push_object(jsonb *builder, char buf[], size_t bufsize);
 
 /**
  * @brief Pop an object from the builder
@@ -75,10 +73,10 @@ JSONB_API int jsonb_push_object(jsonb *builder, char buf[], size_t bufsize);
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API long jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize);
 
 /**
  * @brief Push a key to the builder
@@ -88,10 +86,10 @@ JSONB_API int jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize);
  * @param len the key length
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_key(
+JSONB_API long jsonb_push_key(
     jsonb *builder, const char key[], size_t len, char buf[], size_t bufsize);
 
 /**
@@ -100,10 +98,10 @@ JSONB_API int jsonb_push_key(
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_array(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API long jsonb_push_array(jsonb *builder, char buf[], size_t bufsize);
 
 /**
  * @brief Pop an array from the builder
@@ -111,10 +109,10 @@ JSONB_API int jsonb_push_array(jsonb *builder, char buf[], size_t bufsize);
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API long jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize);
 
 /**
  * @brief Push a raw JSON token to the builder
@@ -124,14 +122,14 @@ JSONB_API int jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize);
  * @param len the token length
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_token(jsonb *builder,
-                               const char token[],
-                               size_t len,
-                               char buf[],
-                               size_t bufsize);
+JSONB_API long jsonb_push_token(jsonb *builder,
+                                const char token[],
+                                size_t len,
+                                char buf[],
+                                size_t bufsize);
 
 /**
  * @brief Push a boolean token to the builder
@@ -140,13 +138,13 @@ JSONB_API int jsonb_push_token(jsonb *builder,
  * @param boolean the boolean to be inserted
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_bool(jsonb *builder,
-                              int boolean,
-                              char buf[],
-                              size_t bufsize);
+JSONB_API long jsonb_push_bool(jsonb *builder,
+                               int boolean,
+                               char buf[],
+                               size_t bufsize);
 
 /**
  * @brief Push a null token to the builder
@@ -154,10 +152,10 @@ JSONB_API int jsonb_push_bool(jsonb *builder,
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_null(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API long jsonb_push_null(jsonb *builder, char buf[], size_t bufsize);
 
 /**
  * @brief Push a string token to the builder
@@ -167,18 +165,33 @@ JSONB_API int jsonb_push_null(jsonb *builder, char buf[], size_t bufsize);
  * @param len the string length
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return a negative @ref jsonb_err value in case of error, @ref JSONB_OK
- * otherwise
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
  */
-JSONB_API int jsonb_push_string(
+JSONB_API long jsonb_push_string(
     jsonb *builder, char str[], size_t len, char buf[], size_t bufsize);
 
+/**
+ * @brief Push a number token to the builder
+ *
+ * @param builder the builder initialized with jsonb_init()
+ * @param number the number to be inserted
+ * @param buf the JSON buffer
+ * @param bufsize the JSON buffer size
+ * @return the amount of bytes written or a negative @ref jsonb_err value in
+ *      case of error
+ */
+JSONB_API long jsonb_push_number(jsonb *builder,
+                                 double number,
+                                 char buf[],
+                                 size_t bufsize);
+
 #ifndef JSONB_HEADER
+#include <stdio.h>
 #ifndef JSONB_DEBUG
 #define TRACE(prev, next) next
 #define DECORATOR(a)
 #else
-#include <stdio.h>
 static const char *
 _jsonb_eval_state(enum jsonb_state state)
 {
@@ -244,7 +257,7 @@ jsonb_init(jsonb *builder)
     STACK_PUSH(builder, JSONB_ARRAY_OR_OBJECT_OR_VALUE);
 }
 
-int
+long
 jsonb_push_object(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
@@ -268,10 +281,10 @@ jsonb_push_object(jsonb *builder, char buf[], size_t bufsize)
         return JSONB_ERROR_INPUT;
     }
     builder->pos += pos;
-    return JSONB_OK;
+    return pos;
 }
 
-int
+long
 jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
@@ -286,10 +299,10 @@ jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize)
         return JSONB_ERROR_INPUT;
     }
     builder->pos += pos;
-    return JSONB_OK;
+    return pos;
 }
 
-int
+long
 jsonb_push_key(
     jsonb *builder, const char key[], size_t len, char buf[], size_t bufsize)
 {
@@ -309,10 +322,10 @@ jsonb_push_key(
         return JSONB_ERROR_INPUT;
     }
     builder->pos += pos;
-    return JSONB_OK;
+    return pos;
 }
 
-int
+long
 jsonb_push_array(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
@@ -336,10 +349,10 @@ jsonb_push_array(jsonb *builder, char buf[], size_t bufsize)
         return JSONB_ERROR_INPUT;
     }
     builder->pos += pos;
-    return JSONB_OK;
+    return pos;
 }
 
-int
+long
 jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
@@ -354,55 +367,55 @@ jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize)
         return JSONB_ERROR_INPUT;
     }
     builder->pos += pos;
-    return JSONB_OK;
+    return pos;
 }
 
 /* push token but don't update builder->pos, instead fill a 'pos' parameter */
-static int
+static long
 _jsonb_push_token(jsonb *builder,
                   const char token[],
                   size_t len,
-                  size_t *pos,
+                  size_t pos,
                   char buf[],
                   size_t bufsize)
 {
     switch (*builder->st_top) {
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        BUFFER_COPY(builder, token, len, *pos, buf, bufsize);
+        BUFFER_COPY(builder, token, len, pos, buf, bufsize);
         STACK_POP(builder);
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ',', *pos, buf, bufsize);
+        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        BUFFER_COPY(builder, token, len, *pos, buf, bufsize);
+        BUFFER_COPY(builder, token, len, pos, buf, bufsize);
         STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
         break;
     case JSONB_OBJECT_VALUE:
-        BUFFER_COPY(builder, token, len, *pos, buf, bufsize);
+        BUFFER_COPY(builder, token, len, pos, buf, bufsize);
         STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
         break;
     default:
         STACK_HEAD(builder, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    return JSONB_OK;
+    return pos;
 }
 
-int
+long
 jsonb_push_token(
     jsonb *builder, const char token[], size_t len, char buf[], size_t bufsize)
 {
-    size_t pos = 0;
-    int ret = _jsonb_push_token(builder, token, len, &pos, buf, bufsize);
-    if (ret == JSONB_OK) builder->pos += pos;
+    long ret = 0;
+    ret = _jsonb_push_token(builder, token, len, ret, buf, bufsize);
+    if (ret > 0) builder->pos += ret;
     return ret;
 }
 
-int
+long
 jsonb_push_bool(jsonb *builder, int boolean, char buf[], size_t bufsize)
 {
-    int ret;
+    long ret;
     if (boolean)
         ret = jsonb_push_token(builder, "true", 4, buf, bufsize);
     else
@@ -410,24 +423,33 @@ jsonb_push_bool(jsonb *builder, int boolean, char buf[], size_t bufsize)
     return ret;
 }
 
-int
+long
 jsonb_push_null(jsonb *builder, char buf[], size_t bufsize)
 {
     return jsonb_push_token(builder, "null", 4, buf, bufsize);
 }
 
-int
+long
 jsonb_push_string(
     jsonb *builder, char str[], size_t len, char buf[], size_t bufsize)
 {
     size_t pos = 0;
-    int ret;
+    long ret;
     BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-    ret = _jsonb_push_token(builder, str, len, &pos, buf, bufsize);
-    if (ret != JSONB_OK) return ret;
+    ret = _jsonb_push_token(builder, str, len, pos, buf, bufsize);
+    if (ret < 0) return ret;
     BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
     builder->pos += pos;
-    return ret;
+    return pos;
+}
+
+long
+jsonb_push_number(jsonb *builder, double number, char buf[], size_t bufsize)
+{
+    char tok[32];
+    long ret = sprintf(tok, "%G", number);
+    if (ret < 0) return JSONB_ERROR_INPUT;
+    return jsonb_push_token(builder, tok, ret, buf, bufsize);
 }
 #endif /* JSONB_HEADER */
 

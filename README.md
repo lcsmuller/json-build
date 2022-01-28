@@ -29,7 +29,7 @@ jsonb_push_object(&b, buf, sizeof(buf));
     jsonb_push_key(&b, "foo", strlen("foo"), buf, sizeof(buf));
     jsonb_push_array(&b, buf, sizeof(buf));
     {
-        jsonb_push_token(&b, "1", 1, buf, sizeof(buf));
+        jsonb_push_number(&b, 1, buf, sizeof(buf));
         jsonb_push_string(&b, "hi", 2, buf, sizeof(buf));
         jsonb_push_bool(&b, 0, buf, sizeof(buf));
         jsonb_push_null(&b, buf, sizeof(buf));
@@ -68,9 +68,9 @@ API
 * `jsonb_push_bool()` - push a boolean token to the builder stack
 * `jsonb_push_null()` - push a null token to the builder stack
 * `jsonb_push_string()` - push a string token to the builder stack
+* `jsonb_push_number()` - push a number token to the builder stack
 
 The following are the possible return values for the builder functions:
-* `JSONB_OK` - everything went as expected, user can proceed
 * `JSONB_ERROR_NOMEM` - buffer is not large enough
 * `JSONB_ERROR_INPUT` - user action don't match expect next token
 

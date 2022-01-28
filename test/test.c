@@ -17,13 +17,13 @@ main(void)
     jsonb_push_object(&b, buf, sizeof(buf));
     {
         jsonb_push_key(&b, "foo", 3, buf, sizeof(buf));
-        jsonb_push_token(&b, "10", 2, buf, sizeof(buf));
+        jsonb_push_number(&b, 10, buf, sizeof(buf));
         jsonb_push_key(&b, "bar", 3, buf, sizeof(buf));
         jsonb_push_null(&b, buf, sizeof(buf));
         jsonb_push_key(&b, "baz", 3, buf, sizeof(buf));
         jsonb_push_array(&b, buf, sizeof(buf));
         {
-            jsonb_push_token(&b, "10", 2, buf, sizeof(buf));
+            jsonb_push_number(&b, 10, buf, sizeof(buf));
             jsonb_pop_array(&b, buf, sizeof(buf));
         }
         jsonb_push_key(&b, "obj", 3, buf, sizeof(buf));
