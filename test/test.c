@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#define JSONB_DEBUG
 #include "json-build.h"
 
 #include "greatest.h"
@@ -67,7 +68,7 @@ check_deep_nesting_object_and_array(void)
     PASS();
 }
 
-SUITE(deep_nesting)
+SUITE(nesting)
 {
     RUN_TEST(check_deep_nesting_array);
     RUN_TEST(check_deep_nesting_object);
@@ -79,11 +80,7 @@ TEST
 check_string_escaping(void)
 {
     char *const strs[] = {
-        "begin",
-        "\nhi\n",
-        "\n\t\t",
-        "\b\a\a\ttest\n",
-        "end"
+        "begin", "\nhi\n", "\n\t\t", "\b\a\a\ttest\n", "end",
     };
     char buf[1028] = { 0 };
     size_t i;
@@ -96,18 +93,63 @@ check_string_escaping(void)
         ASSERT(jsonb_push_string(&b, strs[i], len, buf, sizeof(buf)) >= 0);
     }
     ASSERT(jsonb_pop_array(&b, buf, sizeof(buf)) >= 0);
-    fprintf(stderr, "%s\n", buf);
+
     PASS();
 }
 
-SUITE(string_escaping)
+SUITE(string)
 {
     RUN_TEST(check_string_escaping);
 }
 
-/* TODO */
-SUITE(memory)
+TEST
+check_invalid_top_level_tokens_in_sequence(void)
 {
+    char buf[1028] = { 0 };
+    jsonb b;
+
+    jsonb_init(&b);
+    jsonb_push_bool(&b, 1, buf, sizeof(buf));
+    ASSERT(jsonb_push_bool(&b, 0, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+
+    jsonb_init(&b);
+    jsonb_push_array(&b, buf, sizeof(buf));
+    jsonb_pop_array(&b, buf, sizeof(buf));
+    ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+
+    jsonb_init(&b);
+    jsonb_push_array(&b, buf, sizeof(buf));
+    jsonb_pop_array(&b, buf, sizeof(buf));
+    ASSERT(jsonb_push_bool(&b, 1, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+
+    jsonb_init(&b);
+    jsonb_push_bool(&b, 1, buf, sizeof(buf));
+    ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+
+    jsonb_init(&b);
+    jsonb_push_bool(&b, 1, buf, sizeof(buf));
+    ASSERT(jsonb_push_string(&b, "", 0, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+
+    PASS();
+}
+
+TEST
+check_not_enough_buffer_memory(void)
+{
+    char buf[128] = { 0 };
+    jsonb b;
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_bool(&b, 1, buf, 0) == JSONB_ERROR_NOMEM);
+    ASSERT(jsonb_push_bool(&b, 1, buf, sizeof(buf)) == sizeof("true") - 1);
+
+    PASS();
+}
+
+SUITE(force_error)
+{
+    RUN_TEST(check_invalid_top_level_tokens_in_sequence);
+    RUN_TEST(check_not_enough_buffer_memory);
 }
 
 GREATEST_MAIN_DEFS();
@@ -117,9 +159,9 @@ main(int argc, char *argv[])
 {
     GREATEST_MAIN_BEGIN();
 
-    RUN_SUITE(deep_nesting);
-    RUN_SUITE(string_escaping);
-    RUN_SUITE(memory);
+    RUN_SUITE(nesting);
+    RUN_SUITE(string);
+    RUN_SUITE(force_error);
 
     GREATEST_MAIN_END();
 }
