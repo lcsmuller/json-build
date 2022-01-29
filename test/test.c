@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <stddef.h>
 
-#define JSONB_DEBUG
 #include "json-build.h"
 
 #include "greatest.h"
