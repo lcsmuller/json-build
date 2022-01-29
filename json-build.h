@@ -46,7 +46,7 @@ typedef struct jsonb {
     /** pointer to stack top */
     enum jsonb_state *st_top;
     /** offset in the JSON buffer (current length) */
-    unsigned int pos;
+    size_t pos;
 } jsonb;
 
 /**
@@ -370,15 +370,11 @@ jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize)
     return pos;
 }
 
-/* push token but don't update builder->pos, instead fill a 'pos' parameter */
-static long
-_jsonb_push_token(jsonb *builder,
-                  const char token[],
-                  size_t len,
-                  size_t pos,
-                  char buf[],
-                  size_t bufsize)
+long
+jsonb_push_token(
+    jsonb *builder, const char token[], size_t len, char buf[], size_t bufsize)
 {
+    size_t pos = 0;
     switch (*builder->st_top) {
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         BUFFER_COPY(builder, token, len, pos, buf, bufsize);
@@ -399,17 +395,8 @@ _jsonb_push_token(jsonb *builder,
         STACK_HEAD(builder, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
+    builder->pos += pos;
     return pos;
-}
-
-long
-jsonb_push_token(
-    jsonb *builder, const char token[], size_t len, char buf[], size_t bufsize)
-{
-    long ret = 0;
-    ret = _jsonb_push_token(builder, token, len, ret, buf, bufsize);
-    if (ret > 0) builder->pos += ret;
-    return ret;
 }
 
 long
@@ -434,11 +421,30 @@ jsonb_push_string(
     jsonb *builder, char str[], size_t len, char buf[], size_t bufsize)
 {
     size_t pos = 0;
-    long ret;
-    BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-    ret = _jsonb_push_token(builder, str, len, pos, buf, bufsize);
-    if (ret < 0) return ret;
-    BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
+    switch (*builder->st_top) {
+    case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
+        BUFFER_COPY(builder, str, len, pos, buf, bufsize);
+        STACK_POP(builder);
+        break;
+    case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
+        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
+        /* fall-through */
+    case JSONB_ARRAY_VALUE_OR_CLOSE:
+        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
+        BUFFER_COPY(builder, str, len, pos, buf, bufsize);
+        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
+        STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
+        break;
+    case JSONB_OBJECT_VALUE:
+        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
+        BUFFER_COPY(builder, str, len, pos, buf, bufsize);
+        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
+        STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+        break;
+    default:
+        STACK_HEAD(builder, JSONB_ERROR);
+        return JSONB_ERROR_INPUT;
+    }
     builder->pos += pos;
     return pos;
 }
@@ -446,10 +452,10 @@ jsonb_push_string(
 long
 jsonb_push_number(jsonb *builder, double number, char buf[], size_t bufsize)
 {
-    char tok[32];
-    long ret = sprintf(tok, "%G", number);
+    char token[32];
+    long ret = sprintf(token, "%.17G", number);
     if (ret < 0) return JSONB_ERROR_INPUT;
-    return jsonb_push_token(builder, tok, ret, buf, bufsize);
+    return jsonb_push_token(builder, token, ret, buf, bufsize);
 }
 #endif /* JSONB_HEADER */
 
