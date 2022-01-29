@@ -423,7 +423,9 @@ jsonb_push_string(
     size_t pos = 0;
     switch (*builder->st_top) {
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
+        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
         BUFFER_COPY(builder, str, len, pos, buf, bufsize);
+        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
         STACK_POP(builder);
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
