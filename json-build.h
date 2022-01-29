@@ -35,7 +35,8 @@ enum jsonb_state {
     JSONB_OBJECT_NEXT_KEY_OR_CLOSE,
     JSONB_ARRAY_VALUE_OR_CLOSE,
     JSONB_ARRAY_NEXT_VALUE_OR_CLOSE,
-    JSONB_ERROR
+    JSONB_ERROR,
+    JSONB_DONE
 };
 
 /** @brief Handle for building a JSON string */
@@ -209,6 +210,8 @@ _jsonb_eval_state(enum jsonb_state state)
         return "array next value or close";
     case JSONB_ERROR:
         return "error";
+    case JSONB_DONE:
+        return "done";
     default:
         return "unknown";
     }
@@ -257,6 +260,8 @@ jsonb_push_object(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
         /* fall-through */
@@ -269,6 +274,7 @@ jsonb_push_object(jsonb *builder, char buf[], size_t bufsize)
         /* fall-through */
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         BUFFER_COPY_CHAR(builder, '{', pos, buf, bufsize);
+        STACK_HEAD(builder, JSONB_DONE);
         STACK_PUSH(builder, JSONB_OBJECT_KEY_OR_CLOSE);
         break;
     default:
@@ -284,6 +290,8 @@ jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return 0;
     case JSONB_OBJECT_KEY_OR_CLOSE:
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, '}', pos, buf, bufsize);
@@ -303,6 +311,8 @@ jsonb_push_key(
 {
     size_t pos = 0;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return 0;
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
     /* fall-through */
@@ -325,6 +335,8 @@ jsonb_push_array(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
         /* fall-through */
@@ -337,6 +349,7 @@ jsonb_push_array(jsonb *builder, char buf[], size_t bufsize)
         /* fall-through */
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         BUFFER_COPY_CHAR(builder, '[', pos, buf, bufsize);
+        STACK_HEAD(builder, JSONB_DONE);
         STACK_PUSH(builder, JSONB_ARRAY_VALUE_OR_CLOSE);
         break;
     default:
@@ -352,6 +365,8 @@ jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize)
 {
     size_t pos = 0;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return 0;
     case JSONB_ARRAY_VALUE_OR_CLOSE:
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, ']', pos, buf, bufsize);
@@ -371,9 +386,11 @@ jsonb_push_token(
 {
     size_t pos = 0;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         BUFFER_COPY(builder, token, len, pos, buf, bufsize);
-        STACK_POP(builder);
+        STACK_HEAD(builder, JSONB_DONE);
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
@@ -495,13 +512,15 @@ jsonb_push_string(
     size_t pos = 0;
     long ret;
     switch (*builder->st_top) {
+    case JSONB_DONE:
+        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
         ret = _jsonb_escape(pos + builder->pos, str, len, buf, bufsize);
         if (ret < 0) return ret;
         pos += ret;
         BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        STACK_POP(builder);
+        STACK_HEAD(builder, JSONB_DONE);
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
