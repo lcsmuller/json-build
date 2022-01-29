@@ -2,7 +2,7 @@ JSON-BUILD
 ==========
 
 json-build is a zero-allocation JSON serializer compatible with C89. It is
-inspired by [jsmn](https://github.com/zserge/jsmn), a minimalistic JSON deserializer.
+inspired by [jsmn](https://github.com/zserge/jsmn), a minimalistic JSON tokenizer.
 
 Features
 --------
