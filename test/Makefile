@@ -1,7 +1,7 @@
 TOP = ..
 CC ?= gcc
 
-EXES := test
+EXES := test fuzz
 
 CFLAGS += -Wall -Wextra -Wpedantic -g -I$(TOP)
 
