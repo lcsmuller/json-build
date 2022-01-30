@@ -18,16 +18,22 @@ extern "C" {
 #define JSONB_MAX_DEPTH 512
 #endif
 
-/** @brief json-builder error codes */
-enum jsonb_err {
+/** @brief json-builder return codes */
+typedef enum jsonbcode {
+    /** no error, operation was a success */
+    JSONB_OK = 0,
+    /** string is complete, expects no more inputs */
+    JSONB_END,
     /** not enough tokens were provided */
     JSONB_ERROR_NOMEM = -1,
     /** token doesn't match expected value */
-    JSONB_ERROR_INPUT = -2
-};
+    JSONB_ERROR_INPUT = -2,
+    /** operation would lead to out of boundaries access */
+    JSONB_ERROR_STACK = -3
+} jsonbcode;
 
 /** @brief json-builder serializing state */
-enum jsonb_state {
+enum jsonbstate {
     JSONB_INIT = 0,
     JSONB_ARRAY_OR_OBJECT_OR_VALUE = JSONB_INIT,
     JSONB_OBJECT_KEY_OR_CLOSE,
@@ -42,9 +48,9 @@ enum jsonb_state {
 /** @brief Handle for building a JSON string */
 typedef struct jsonb {
     /** expected next input */
-    enum jsonb_state st_stack[JSONB_MAX_DEPTH + 1];
+    enum jsonbstate stack[JSONB_MAX_DEPTH + 1];
     /** pointer to stack top */
-    enum jsonb_state *st_top;
+    enum jsonbstate *top;
     /** offset in the JSON buffer (current length) */
     size_t pos;
 } jsonb;
@@ -62,10 +68,11 @@ JSONB_API void jsonb_init(jsonb *builder);
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_object(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_push_object(jsonb *builder,
+                                      char buf[],
+                                      size_t bufsize);
 
 /**
  * @brief Pop an object from the builder
@@ -73,24 +80,24 @@ JSONB_API long jsonb_push_object(jsonb *builder, char buf[], size_t bufsize);
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_pop_object(jsonb *builder,
+                                     char buf[],
+                                     size_t bufsize);
 
 /**
  * @brief Push a key to the builder
  *
  * @param builder the builder initialized with jsonb_init()
- * @param key the key to be inserted
- * @param len the key length
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @param key the key to be inserted
+ * @param len the key length
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_key(
-    jsonb *builder, const char key[], size_t len, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_push_key(
+    jsonb *builder, char buf[], size_t bufsize, const char key[], size_t len);
 
 /**
  * @brief Push an array to the builder
@@ -98,10 +105,11 @@ JSONB_API long jsonb_push_key(
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_array(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_push_array(jsonb *builder,
+                                     char buf[],
+                                     size_t bufsize);
 
 /**
  * @brief Pop an array from the builder
@@ -109,42 +117,41 @@ JSONB_API long jsonb_push_array(jsonb *builder, char buf[], size_t bufsize);
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_pop_array(jsonb *builder,
+                                    char buf[],
+                                    size_t bufsize);
 
 /**
  * @brief Push a raw JSON token to the builder
  *
  * @param builder the builder initialized with jsonb_init()
- * @param token the token to be inserted
- * @param len the token length
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @param token the token to be inserted
+ * @param len the token length
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_token(jsonb *builder,
-                                const char token[],
-                                size_t len,
-                                char buf[],
-                                size_t bufsize);
+JSONB_API jsonbcode jsonb_push_token(jsonb *builder,
+                                     char buf[],
+                                     size_t bufsize,
+                                     const char token[],
+                                     size_t len);
 
 /**
  * @brief Push a boolean token to the builder
  *
  * @param builder the builder initialized with jsonb_init()
- * @param boolean the boolean to be inserted
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @param boolean the boolean to be inserted
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_bool(jsonb *builder,
-                               int boolean,
-                               char buf[],
-                               size_t bufsize);
+JSONB_API jsonbcode jsonb_push_bool(jsonb *builder,
+                                    char buf[],
+                                    size_t bufsize,
+                                    int boolean);
 
 /**
  * @brief Push a null token to the builder
@@ -152,39 +159,38 @@ JSONB_API long jsonb_push_bool(jsonb *builder,
  * @param builder the builder initialized with jsonb_init()
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_null(jsonb *builder, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_push_null(jsonb *builder,
+                                    char buf[],
+                                    size_t bufsize);
 
 /**
  * @brief Push a string token to the builder
  *
  * @param builder the builder initialized with jsonb_init()
- * @param str the string to be inserted
- * @param len the string length
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @param str the string to be inserted
+ * @param len the string length
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_string(
-    jsonb *builder, char str[], size_t len, char buf[], size_t bufsize);
+JSONB_API jsonbcode jsonb_push_string(
+    jsonb *builder, char buf[], size_t bufsize, const char str[], size_t len);
 
 /**
  * @brief Push a number token to the builder
  *
  * @param builder the builder initialized with jsonb_init()
- * @param number the number to be inserted
  * @param buf the JSON buffer
  * @param bufsize the JSON buffer size
- * @return the amount of bytes written or a negative @ref jsonb_err value in
- *      case of error
+ * @param number the number to be inserted
+ * @return @ref jsonbcode value
  */
-JSONB_API long jsonb_push_number(jsonb *builder,
-                                 double number,
-                                 char buf[],
-                                 size_t bufsize);
+JSONB_API jsonbcode jsonb_push_number(jsonb *builder,
+                                      char buf[],
+                                      size_t bufsize,
+                                      double number);
 
 #ifndef JSONB_HEADER
 #include <stdio.h>
@@ -193,7 +199,7 @@ JSONB_API long jsonb_push_number(jsonb *builder,
 #define DECORATOR(a)
 #else
 static const char *
-_jsonb_eval_state(enum jsonb_state state)
+_jsonb_eval_state(enum jsonbstate state)
 {
     switch (state) {
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
@@ -218,16 +224,16 @@ _jsonb_eval_state(enum jsonb_state state)
 }
 #define TRACE(prev, next)                                                     \
     do {                                                                      \
-        enum jsonb_state _prev = prev, _next = next;                          \
+        enum jsonbstate _prev = prev, _next = next;                           \
         fprintf(stderr, "%s():L%d | %s -> %s\n", __func__, __LINE__,          \
                 _jsonb_eval_state(_prev), _jsonb_eval_state(_next));          \
     } while (0)
 #define DECORATOR(d) d
 #endif /* JSONB_DEBUG */
 
-#define STACK_PUSH(b, state) TRACE(*(b)->st_top, *++(b)->st_top = (state))
-#define STACK_POP(b)         TRACE(*(b)->st_top, DECORATOR(*)--(b)->st_top)
-#define STACK_HEAD(b, state) TRACE(*(b)->st_top, *(b)->st_top = (state))
+#define STACK_PUSH(b, state) TRACE(*(b)->top, *++(b)->top = (state))
+#define STACK_POP(b)         TRACE(*(b)->top, DECORATOR(*)--(b)->top)
+#define STACK_HEAD(b, state) TRACE(*(b)->top, *(b)->top = (state))
 
 #define BUFFER_COPY_CHAR(b, c, _pos, buf, bufsize)                            \
     do {                                                                      \
@@ -248,314 +254,316 @@ _jsonb_eval_state(enum jsonb_state state)
     } while (0)
 
 void
-jsonb_init(jsonb *builder)
+jsonb_init(jsonb *b)
 {
     static jsonb empty_builder;
-    *builder = empty_builder;
-    builder->st_top = builder->st_stack;
+    *b = empty_builder;
+    b->top = b->stack;
 }
 
-long
-jsonb_push_object(jsonb *builder, char buf[], size_t bufsize)
+jsonbcode
+jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
 {
+    enum jsonbstate next_state;
+    enum jsonbcode code;
     size_t pos = 0;
-    switch (*builder->st_top) {
+    if (b->top - b->stack >= JSONB_MAX_DEPTH)
+        return JSONB_ERROR_STACK;
+    switch (*b->top) {
     case JSONB_DONE:
         return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
+        BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_OBJECT_VALUE:
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        if (*builder->st_top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
-            STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
-        else if (*builder->st_top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
-            STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
-        /* fall-through */
+        if (*b->top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
+            next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
+        else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
+            next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        code = JSONB_OK;
+        break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        BUFFER_COPY_CHAR(builder, '{', pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_DONE);
-        STACK_PUSH(builder, JSONB_OBJECT_KEY_OR_CLOSE);
+        next_state = JSONB_DONE;
+        code = JSONB_END;
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    BUFFER_COPY_CHAR(b, '{', pos, buf, bufsize);
+    STACK_HEAD(b, next_state);
+    STACK_PUSH(b, JSONB_OBJECT_KEY_OR_CLOSE);
+    b->pos += pos;
+    return code;
 }
 
-long
-jsonb_pop_object(jsonb *builder, char buf[], size_t bufsize)
+jsonbcode
+jsonb_pop_object(jsonb *b, char buf[], size_t bufsize)
 {
+    enum jsonbcode code;
     size_t pos = 0;
-    switch (*builder->st_top) {
+    switch (*b->top) {
     case JSONB_DONE:
-        return 0;
+        code = JSONB_END;
+        break;
     case JSONB_OBJECT_KEY_OR_CLOSE:
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, '}', pos, buf, bufsize);
-        STACK_POP(builder);
+        code = JSONB_OK;
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    BUFFER_COPY_CHAR(b, '}', pos, buf, bufsize);
+    STACK_POP(b);
+    b->pos += pos;
+    return code;
 }
 
-long
+jsonbcode
 jsonb_push_key(
-    jsonb *builder, const char key[], size_t len, char buf[], size_t bufsize)
+    jsonb *b, char buf[], size_t bufsize, const char key[], size_t len)
 {
     size_t pos = 0;
-    switch (*builder->st_top) {
+    switch (*b->top) {
     case JSONB_DONE:
-        return 0;
+        return JSONB_ERROR_INPUT;
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
+        BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
     /* fall-through */
     case JSONB_OBJECT_KEY_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        BUFFER_COPY(builder, key, len, pos, buf, bufsize);
-        BUFFER_COPY(builder, "\":", 2, pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_OBJECT_VALUE);
+        BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
+        BUFFER_COPY(b, key, len, pos, buf, bufsize);
+        BUFFER_COPY(b, "\":", 2, pos, buf, bufsize);
+        STACK_HEAD(b, JSONB_OBJECT_VALUE);
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    b->pos += pos;
+    return JSONB_OK;
 }
 
-long
-jsonb_push_array(jsonb *builder, char buf[], size_t bufsize)
+jsonbcode
+jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
 {
+    enum jsonbstate next_state;
+    enum jsonbcode code;
     size_t pos = 0;
-    switch (*builder->st_top) {
+    if (b->top - b->stack >= JSONB_MAX_DEPTH)
+        return JSONB_ERROR_STACK;
+    switch (*b->top) {
     case JSONB_DONE:
         return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
+        BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_OBJECT_VALUE:
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        if (*builder->st_top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
-            STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
-        else if (*builder->st_top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
-            STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
-        /* fall-through */
+        if (*b->top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
+            next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
+        else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
+            next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        code = JSONB_OK;
+        break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        BUFFER_COPY_CHAR(builder, '[', pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_DONE);
-        STACK_PUSH(builder, JSONB_ARRAY_VALUE_OR_CLOSE);
+        next_state = JSONB_DONE;
+        code = JSONB_END;
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    BUFFER_COPY_CHAR(b, '[', pos, buf, bufsize);
+    STACK_HEAD(b, next_state);
+    STACK_PUSH(b, JSONB_ARRAY_VALUE_OR_CLOSE);
+    b->pos += pos;
+    return code;
 }
 
-long
-jsonb_pop_array(jsonb *builder, char buf[], size_t bufsize)
+jsonbcode
+jsonb_pop_array(jsonb *b, char buf[], size_t bufsize)
 {
+    enum jsonbcode code;
     size_t pos = 0;
-    switch (*builder->st_top) {
+    switch (*b->top) {
     case JSONB_DONE:
-        return 0;
+    case JSONB_ERROR:
+        code = JSONB_END;
+        break;
     case JSONB_ARRAY_VALUE_OR_CLOSE:
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ']', pos, buf, bufsize);
-        STACK_POP(builder);
+        code = JSONB_OK;
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    BUFFER_COPY_CHAR(b, ']', pos, buf, bufsize);
+    STACK_POP(b);
+    b->pos += pos;
+    return code;
 }
 
-long
+jsonbcode
 jsonb_push_token(
-    jsonb *builder, const char token[], size_t len, char buf[], size_t bufsize)
+    jsonb *b, char buf[], size_t bufsize, const char token[], size_t len)
 {
+    enum jsonbstate next_state;
+    enum jsonbcode code;
     size_t pos = 0;
-    switch (*builder->st_top) {
+    switch (*b->top) {
     case JSONB_DONE:
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        BUFFER_COPY(builder, token, len, pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_DONE);
+        next_state = JSONB_DONE;
+        code = JSONB_END;
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
+        BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        BUFFER_COPY(builder, token, len, pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
+        next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        code = JSONB_OK;
         break;
     case JSONB_OBJECT_VALUE:
-        BUFFER_COPY(builder, token, len, pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+        next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
+        code = JSONB_OK;
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    BUFFER_COPY(b, token, len, pos, buf, bufsize);
+    STACK_HEAD(b, next_state);
+    b->pos += pos;
+    return code;
 }
 
-long
-jsonb_push_bool(jsonb *builder, int boolean, char buf[], size_t bufsize)
+jsonbcode
+jsonb_push_bool(jsonb *b, char buf[], size_t bufsize, int boolean)
 {
-    if (boolean) return jsonb_push_token(builder, "true", 4, buf, bufsize);
-    return jsonb_push_token(builder, "false", 5, buf, bufsize);
+    if (boolean) return jsonb_push_token(b, buf, bufsize, "true", 4);
+    return jsonb_push_token(b, buf, bufsize, "false", 5);
 }
 
-long
-jsonb_push_null(jsonb *builder, char buf[], size_t bufsize)
+jsonbcode
+jsonb_push_null(jsonb *b, char buf[], size_t bufsize)
 {
-    return jsonb_push_token(builder, "null", 4, buf, bufsize);
+    return jsonb_push_token(b, buf, bufsize, "null", 4);
 }
 
 static long
-_jsonb_escape(size_t pos, char str[], size_t len, char buf[], size_t bufsize)
+_jsonb_escape(
+    size_t *pos, char buf[], size_t bufsize, const char str[], size_t len)
 {
     char *esc_tok = NULL, _esc_tok[8] = "\\u00";
     char *esc_buf = NULL;
     int extra_bytes = 0;
     size_t i;
-
-/* 1st iteration, esc_buf is NULL and count extra_bytes needed for escaping
- * 2st iteration, esc_buf is not NULL, and does escaping.  */
 second_iter:
+    /* 1st iteration, esc_buf is NULL and count extra_bytes needed for escaping
+     * 2st iteration, esc_buf is not NULL, and does escaping.  */
     for (i = 0; i < len; ++i) {
         unsigned char c = str[i];
         esc_tok = NULL;
         switch (c) {
-        case 0x22:
-            esc_tok = "\\\"";
-            break;
-        case 0x5C:
-            esc_tok = "\\\\";
-            break;
-        case '\b':
-            esc_tok = "\\b";
-            break;
-        case '\f':
-            esc_tok = "\\f";
-            break;
-        case '\n':
-            esc_tok = "\\n";
-            break;
-        case '\r':
-            esc_tok = "\\r";
-            break;
-        case '\t':
-            esc_tok = "\\t";
-            break;
-        default:
-            if (c <= 0x1F) {
-                static const char tohex[] = "0123456789abcdef";
-                _esc_tok[4] = tohex[c >> 4];
-                _esc_tok[5] = tohex[c & 0xF];
-                _esc_tok[6] = 0;
-                esc_tok = _esc_tok;
-            }
+        case 0x22: esc_tok = "\\\""; break;
+        case 0x5C: esc_tok = "\\\\"; break;
+        case '\b': esc_tok = "\\b"; break;
+        case '\f': esc_tok = "\\f"; break;
+        case '\n': esc_tok = "\\n"; break;
+        case '\r': esc_tok = "\\r"; break;
+        case '\t': esc_tok = "\\t"; break;
+        default: if (c <= 0x1F) {
+                   static const char tohex[] = "0123456789abcdef";
+                   _esc_tok[4] = tohex[c >> 4];
+                   _esc_tok[5] = tohex[c & 0xF];
+                   _esc_tok[6] = 0;
+                   esc_tok = _esc_tok;
+                 }
         }
-
         if (esc_tok) {
             int j;
             for (j = 0; esc_tok[j]; j++) {
                 if (!esc_buf) /* count how many extra bytes are needed */
                     continue;
-                *esc_buf = esc_tok[j];
-                ++esc_buf;
+                *esc_buf++ = esc_tok[j];
             }
             extra_bytes += j - 1;
         }
         else if (esc_buf) {
-            *esc_buf = c;
-            ++esc_buf;
+            *esc_buf++ = c;
         }
     }
 
-    if (pos + len + extra_bytes > bufsize) {
-        return JSONB_ERROR_NOMEM;
-    }
+    if (*pos + len + extra_bytes > bufsize) return JSONB_ERROR_NOMEM;
+
     if (esc_buf) {
-        return len + extra_bytes;
+        *pos += len + extra_bytes;
+        return JSONB_OK;
     }
     if (!extra_bytes) {
         size_t j;
         for (j = 0; j < len; ++j)
-            buf[pos + j] = str[j];
-        return len;
+            buf[*pos + j] = str[j];
+        *pos += len;
+        return JSONB_OK;
     }
-
-    esc_buf = buf + pos;
+    esc_buf = buf + *pos;
     extra_bytes = 0;
-
     goto second_iter;
 }
 
-long
+jsonbcode
 jsonb_push_string(
-    jsonb *builder, char str[], size_t len, char buf[], size_t bufsize)
+    jsonb *b, char buf[], size_t bufsize, const char str[], size_t len)
 {
+    enum jsonbstate next_state;
+    enum jsonbcode code, ret;
     size_t pos = 0;
-    long ret;
-    switch (*builder->st_top) {
+    switch (*b->top) {
     case JSONB_DONE:
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        ret = _jsonb_escape(pos + builder->pos, str, len, buf, bufsize);
-        if (ret < 0) return ret;
-        pos += ret;
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_DONE);
+        next_state = JSONB_DONE;
+        code = JSONB_END;
         break;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, ',', pos, buf, bufsize);
+        BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        ret = _jsonb_escape(pos + builder->pos, str, len, buf, bufsize);
-        if (ret < 0) return ret;
-        pos += ret;
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_ARRAY_NEXT_VALUE_OR_CLOSE);
+        next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        code = JSONB_OK;
         break;
     case JSONB_OBJECT_VALUE:
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        ret = _jsonb_escape(pos + builder->pos, str, len, buf, bufsize);
-        if (ret < 0) return ret;
-        pos += ret;
-        BUFFER_COPY_CHAR(builder, '"', pos, buf, bufsize);
-        STACK_HEAD(builder, JSONB_OBJECT_NEXT_KEY_OR_CLOSE);
+        next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
+        code = JSONB_OK;
         break;
     default:
-        STACK_HEAD(builder, JSONB_ERROR);
+        STACK_HEAD(b, JSONB_ERROR);
         return JSONB_ERROR_INPUT;
     }
-    builder->pos += pos;
-    return pos;
+    BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
+    ret = _jsonb_escape(&pos, buf + b->pos, bufsize, str, len);
+    if (ret != JSONB_OK) return ret;
+    BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
+    STACK_HEAD(b, next_state);
+    b->pos += pos;
+    return code;
 }
 
-long
-jsonb_push_number(jsonb *builder, double number, char buf[], size_t bufsize)
+jsonbcode
+jsonb_push_number(jsonb *b, char buf[], size_t bufsize, double number)
 {
     char token[32];
-    long ret = sprintf(token, "%.17G", number);
-    if (ret < 0) return JSONB_ERROR_INPUT;
-    return jsonb_push_token(builder, token, ret, buf, bufsize);
+    long len = sprintf(token, "%.17G", number);
+    if (len < 0) return JSONB_ERROR_INPUT;
+    return jsonb_push_token(b, buf, bufsize, token, len);
 }
 #endif /* JSONB_HEADER */
 
