@@ -8,6 +8,115 @@
 #include "greatest.h"
 
 TEST
+check_valid_singles(void)
+{
+    char buf[2048] = { 0 };
+    jsonb b;
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) >= 0);
+    ASSERT(jsonb_pop_array(&b, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("[]", buf);
+    memset(buf, 0, sizeof(buf));
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_object(&b, buf, sizeof(buf)) >= 0);
+    ASSERT(jsonb_pop_object(&b, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("{}", buf);
+    memset(buf, 0, sizeof(buf));
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_bool(&b, 0, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("false", buf);
+    memset(buf, 0, sizeof(buf));
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_bool(&b, 1, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("true", buf);
+    memset(buf, 0, sizeof(buf));
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_number(&b, 10, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("10", buf);
+    memset(buf, 0, sizeof(buf));
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_string(&b, "hi", 2, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("\"hi\"", buf);
+    memset(buf, 0, sizeof(buf));
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_null(&b, buf, sizeof(buf)) >= 0);
+    ASSERT_STR_EQ("null", buf);
+    memset(buf, 0, sizeof(buf));
+
+    PASS();
+}
+
+TEST
+check_valid_array(void)
+{
+    char buf[2048] = { 0 };
+    jsonb b;
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) >= 0);
+    {
+        ASSERT(jsonb_push_bool(&b, 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_bool(&b, 0, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_null(&b, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_number(&b, 10, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_string(&b, "foo", 3, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_object(&b, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_pop_object(&b, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_pop_array(&b, buf, sizeof(buf)) >= 0);
+    }
+
+    ASSERT_STR_EQ("[true,false,null,10,\"foo\",{}]", buf);
+
+    PASS();
+}
+
+TEST
+check_valid_object(void)
+{
+    char buf[2048] = { 0 };
+    jsonb b;
+
+    jsonb_init(&b);
+    ASSERT(jsonb_push_object(&b, buf, sizeof(buf)) >= 0);
+    {
+        ASSERT(jsonb_push_key(&b, "a", 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_bool(&b, 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_key(&b, "b", 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_bool(&b, 0, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_key(&b, "c", 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_null(&b, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_key(&b, "d", 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_number(&b, 10, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_key(&b, "e", 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_string(&b, "foo", 3, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_key(&b, "f", 1, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_pop_array(&b, buf, sizeof(buf)) >= 0);
+        ASSERT(jsonb_pop_object(&b, buf, sizeof(buf)) >= 0);
+    }
+
+    ASSERT_STR_EQ(
+        "{\"a\":true,\"b\":false,\"c\":null,\"d\":10,\"e\":\"foo\",\"f\":[]}",
+        buf);
+
+    PASS();
+}
+
+SUITE(valid_output)
+{
+    RUN_TEST(check_valid_singles);
+    RUN_TEST(check_valid_array);
+    RUN_TEST(check_valid_object);
+}
+
+TEST
 check_deep_nesting_array(void)
 {
     char buf[2048] = { 0 };
@@ -127,7 +236,8 @@ check_invalid_top_level_tokens_in_sequence(void)
 
     jsonb_init(&b);
     jsonb_push_bool(&b, 1, buf, sizeof(buf));
-    ASSERT(jsonb_push_string(&b, "", 0, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+    ASSERT(jsonb_push_string(&b, "", 0, buf, sizeof(buf))
+           == JSONB_ERROR_INPUT);
 
     PASS();
 }
@@ -158,6 +268,7 @@ main(int argc, char *argv[])
 {
     GREATEST_MAIN_BEGIN();
 
+    RUN_SUITE(valid_output);
     RUN_SUITE(nesting);
     RUN_SUITE(string);
     RUN_SUITE(force_error);
