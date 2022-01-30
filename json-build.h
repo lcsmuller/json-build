@@ -276,8 +276,6 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
     if (b->top - b->stack >= JSONB_MAX_DEPTH)
         return JSONB_ERROR_STACK;
     switch (*b->top) {
-    case JSONB_DONE:
-        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
@@ -295,6 +293,9 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_DONE:
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '{', pos, buf, bufsize);
@@ -319,6 +320,8 @@ jsonb_pop_object(jsonb *b, char buf[], size_t bufsize)
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '}', pos, buf, bufsize);
@@ -333,8 +336,6 @@ jsonb_push_key(
 {
     size_t pos = 0;
     switch (*b->top) {
-    case JSONB_DONE:
-        return JSONB_ERROR_INPUT;
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
     /* fall-through */
@@ -346,6 +347,8 @@ jsonb_push_key(
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_DONE:
         return JSONB_ERROR_INPUT;
     }
     b->pos += pos;
@@ -361,8 +364,6 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
     if (b->top - b->stack >= JSONB_MAX_DEPTH)
         return JSONB_ERROR_STACK;
     switch (*b->top) {
-    case JSONB_DONE:
-        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
@@ -380,6 +381,8 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_DONE:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '[', pos, buf, bufsize);
@@ -396,7 +399,6 @@ jsonb_pop_array(jsonb *b, char buf[], size_t bufsize)
     size_t pos = 0;
     switch (*b->top) {
     case JSONB_DONE:
-    case JSONB_ERROR:
         code = JSONB_END;
         break;
     case JSONB_ARRAY_VALUE_OR_CLOSE:
@@ -405,6 +407,8 @@ jsonb_pop_array(jsonb *b, char buf[], size_t bufsize)
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, ']', pos, buf, bufsize);
@@ -421,9 +425,6 @@ jsonb_push_token(
     enum jsonbcode code;
     size_t pos = 0;
     switch (*b->top) {
-    case JSONB_DONE:
-    case JSONB_ERROR:
-        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         next_state = JSONB_DONE;
         code = JSONB_END;
@@ -441,6 +442,9 @@ jsonb_push_token(
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_DONE:
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY(b, token, len, pos, buf, bufsize);
@@ -532,9 +536,6 @@ jsonb_push_string(
     enum jsonbcode code, ret;
     size_t pos = 0;
     switch (*b->top) {
-    case JSONB_DONE:
-    case JSONB_ERROR:
-        return JSONB_ERROR_INPUT;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         next_state = JSONB_DONE;
         code = JSONB_END;
@@ -552,6 +553,9 @@ jsonb_push_string(
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
+        /* fall-through */
+    case JSONB_DONE:
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
