@@ -330,6 +330,68 @@ jsonb_pop_object(jsonb *b, char buf[], size_t bufsize)
     return code;
 }
 
+static long
+_jsonb_escape(
+    size_t *pos, char buf[], size_t bufsize, const char str[], size_t len)
+{
+    char *esc_tok = NULL, _esc_tok[8] = "\\u00";
+    char *esc_buf = NULL;
+    int extra_bytes = 0;
+    size_t i;
+second_iter:
+    /* 1st iteration, esc_buf is NULL and count extra_bytes needed for escaping
+     * 2st iteration, esc_buf is not NULL, and does escaping.  */
+    for (i = 0; i < len; ++i) {
+        unsigned char c = str[i];
+        esc_tok = NULL;
+        switch (c) {
+        case 0x22: esc_tok = "\\\""; break;
+        case 0x5C: esc_tok = "\\\\"; break;
+        case '\b': esc_tok = "\\b"; break;
+        case '\f': esc_tok = "\\f"; break;
+        case '\n': esc_tok = "\\n"; break;
+        case '\r': esc_tok = "\\r"; break;
+        case '\t': esc_tok = "\\t"; break;
+        default: if (c <= 0x1F) {
+                   static const char tohex[] = "0123456789abcdef";
+                   _esc_tok[4] = tohex[c >> 4];
+                   _esc_tok[5] = tohex[c & 0xF];
+                   _esc_tok[6] = 0;
+                   esc_tok = _esc_tok;
+                 }
+        }
+        if (esc_tok) {
+            int j;
+            for (j = 0; esc_tok[j]; j++) {
+                if (!esc_buf) /* count how many extra bytes are needed */
+                    continue;
+                *esc_buf++ = esc_tok[j];
+            }
+            extra_bytes += j - 1;
+        }
+        else if (esc_buf) {
+            *esc_buf++ = c;
+        }
+    }
+
+    if (*pos + len + extra_bytes > bufsize) return JSONB_ERROR_NOMEM;
+
+    if (esc_buf) {
+        *pos += len + extra_bytes;
+        return JSONB_OK;
+    }
+    if (!extra_bytes) {
+        size_t j;
+        for (j = 0; j < len; ++j)
+            buf[*pos + j] = str[j];
+        *pos += len;
+        return JSONB_OK;
+    }
+    esc_buf = buf + *pos;
+    extra_bytes = 0;
+    goto second_iter;
+}
+
 jsonbcode
 jsonb_push_key(
     jsonb *b, char buf[], size_t bufsize, const char key[], size_t len)
@@ -339,12 +401,14 @@ jsonb_push_key(
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
     /* fall-through */
-    case JSONB_OBJECT_KEY_OR_CLOSE:
+    case JSONB_OBJECT_KEY_OR_CLOSE: {
+        enum jsonbcode ret;
         BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
-        BUFFER_COPY(b, key, len, pos, buf, bufsize);
+        ret = _jsonb_escape(&pos, buf + b->pos, bufsize, key, len);
+        if (ret != JSONB_OK) return ret;
         BUFFER_COPY(b, "\":", 2, pos, buf, bufsize);
         STACK_HEAD(b, JSONB_OBJECT_VALUE);
-        break;
+    } break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
         /* fall-through */
@@ -464,68 +528,6 @@ jsonbcode
 jsonb_push_null(jsonb *b, char buf[], size_t bufsize)
 {
     return jsonb_push_token(b, buf, bufsize, "null", 4);
-}
-
-static long
-_jsonb_escape(
-    size_t *pos, char buf[], size_t bufsize, const char str[], size_t len)
-{
-    char *esc_tok = NULL, _esc_tok[8] = "\\u00";
-    char *esc_buf = NULL;
-    int extra_bytes = 0;
-    size_t i;
-second_iter:
-    /* 1st iteration, esc_buf is NULL and count extra_bytes needed for escaping
-     * 2st iteration, esc_buf is not NULL, and does escaping.  */
-    for (i = 0; i < len; ++i) {
-        unsigned char c = str[i];
-        esc_tok = NULL;
-        switch (c) {
-        case 0x22: esc_tok = "\\\""; break;
-        case 0x5C: esc_tok = "\\\\"; break;
-        case '\b': esc_tok = "\\b"; break;
-        case '\f': esc_tok = "\\f"; break;
-        case '\n': esc_tok = "\\n"; break;
-        case '\r': esc_tok = "\\r"; break;
-        case '\t': esc_tok = "\\t"; break;
-        default: if (c <= 0x1F) {
-                   static const char tohex[] = "0123456789abcdef";
-                   _esc_tok[4] = tohex[c >> 4];
-                   _esc_tok[5] = tohex[c & 0xF];
-                   _esc_tok[6] = 0;
-                   esc_tok = _esc_tok;
-                 }
-        }
-        if (esc_tok) {
-            int j;
-            for (j = 0; esc_tok[j]; j++) {
-                if (!esc_buf) /* count how many extra bytes are needed */
-                    continue;
-                *esc_buf++ = esc_tok[j];
-            }
-            extra_bytes += j - 1;
-        }
-        else if (esc_buf) {
-            *esc_buf++ = c;
-        }
-    }
-
-    if (*pos + len + extra_bytes > bufsize) return JSONB_ERROR_NOMEM;
-
-    if (esc_buf) {
-        *pos += len + extra_bytes;
-        return JSONB_OK;
-    }
-    if (!extra_bytes) {
-        size_t j;
-        for (j = 0; j < len; ++j)
-            buf[*pos + j] = str[j];
-        *pos += len;
-        return JSONB_OK;
-    }
-    esc_buf = buf + *pos;
-    extra_bytes = 0;
-    goto second_iter;
 }
 
 jsonbcode
