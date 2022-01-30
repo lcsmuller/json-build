@@ -43,7 +43,7 @@ main(void)
                 r = JSONB_ERROR_INPUT;
             }
             else {
-                r = jsonb_push_key(b, cmd + i + 1, arg, buf, z);
+                r = jsonb_push_key(b, buf, z, cmd + i + 1, arg);
                 i += arg;
             }
             break;
@@ -54,7 +54,7 @@ main(void)
             r = jsonb_pop_array(b, buf, z);
             break;
         case 5:
-            r = jsonb_push_bool(b, arg % 2, buf, z);
+            r = jsonb_push_bool(b, buf, z, arg % 2);
             break;
         case 6:
             r = jsonb_push_null(b, buf, z);
@@ -64,12 +64,12 @@ main(void)
                 r = JSONB_ERROR_INPUT;
             }
             else {
-                r = jsonb_push_string(b, cmd + i + 1, arg, buf, z);
+                r = jsonb_push_string(b, buf, z, cmd + i + 1, arg);
                 i += arg;
             }
             break;
         case 8:
-            r = jsonb_push_number(b, arg / 28.0, buf, z);
+            r = jsonb_push_number(b, buf, z, arg / 28.0);
             break;
         }
 
