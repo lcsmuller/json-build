@@ -70,8 +70,8 @@ API
 * `jsonb_push_number()` - push a number token to the builder stack
 
 The following are the possible return codes for the builder functions:
-* `JSONB_OK` - operation was a success, user can proceed with next operation
-* `JSONB_DONE` - operation was a success, JSON is complete and expects no more operations
+* `JSONB_OK` - operation was a success, user can proceed with the next operation
+* `JSONB_END` - operation was a success, JSON is complete and expects no more operations
 * `JSONB_ERROR_NOMEM` - buffer is not large enough
 * `JSONB_ERROR_INPUT` - user action don't match expected next token
 * `JSONB_ERROR_STACK` - user action would lead to out of boundaries access, increase `JSONB_MAX_DEPTH`!
