@@ -1,4 +1,10 @@
-#ifndef JSON_BUILD_H
+/*
+ * Special thanks to Christopher Wellons (aka skeeto) for giving valuable 
+ * feedback that helped improve this lib.
+ *
+ * See: https://www.reddit.com/r/C_Programming/comments/sf95m3/comment/huojrjn
+ */
+#ifndef JSON_BUILD_
 #define JSON_BUILD_H
 
 #include <stddef.h>
