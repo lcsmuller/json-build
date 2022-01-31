@@ -4,7 +4,7 @@
  *
  * See: https://www.reddit.com/r/C_Programming/comments/sf95m3/comment/huojrjn
  */
-#ifndef JSON_BUILD_
+#ifndef JSON_BUILD_H
 #define JSON_BUILD_H
 
 #include <stddef.h>
