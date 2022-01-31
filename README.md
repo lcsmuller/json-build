@@ -21,7 +21,7 @@ Download `json-build.h`, include it, done.
 
 ...
 jsonb b;
-char buf[1024] = { 0 };
+char buf[1024];
 
 jsonb_init(&b);
 jsonb_push_object(&b, buf, sizeof(buf));
