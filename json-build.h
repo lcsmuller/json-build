@@ -279,12 +279,11 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
-    case JSONB_OBJECT_VALUE:
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        if (*b->top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
-            new_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
-        else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
-            new_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        new_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        break;
+    case JSONB_OBJECT_VALUE:
+        new_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
         break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         new_state = JSONB_DONE;
@@ -311,7 +310,7 @@ jsonb_pop_object(jsonb *b, char buf[], size_t bufsize)
     switch (*b->top) {
     case JSONB_OBJECT_KEY_OR_CLOSE:
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
-        code = b->top - 1 == b->stack ? JSONB_END : JSONB_OK;
+        code = b->stack == b->top - 1 ? JSONB_END : JSONB_OK;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
@@ -425,12 +424,11 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
         /* fall-through */
-    case JSONB_OBJECT_VALUE:
     case JSONB_ARRAY_VALUE_OR_CLOSE:
-        if (*b->top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
-            new_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
-        else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
-            new_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        new_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+        break;
+    case JSONB_OBJECT_VALUE:
+        new_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
         break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         new_state = JSONB_DONE;
@@ -439,6 +437,7 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
         STACK_HEAD(b, JSONB_ERROR);
         /* fall-through */
     case JSONB_DONE:
+    case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '[', pos, buf, bufsize);
@@ -456,7 +455,7 @@ jsonb_pop_array(jsonb *b, char buf[], size_t bufsize)
     switch (*b->top) {
     case JSONB_ARRAY_VALUE_OR_CLOSE:
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        code = b->top - 1 == b->stack ? JSONB_END : JSONB_OK;
+        code = b->stack == b->top - 1 ? JSONB_END : JSONB_OK;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
