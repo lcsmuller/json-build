@@ -1,5 +1,5 @@
 /*
- * Special thanks to Christopher Wellons (aka skeeto) for giving valuable 
+ * Special thanks to Christopher Wellons (aka skeeto) for giving valuable
  * feedback that helped improve this lib.
  *
  * See: https://www.reddit.com/r/C_Programming/comments/sf95m3/comment/huojrjn
@@ -237,26 +237,28 @@ _jsonb_eval_state(enum jsonbstate state)
 #define DECORATOR(d) d
 #endif /* JSONB_DEBUG */
 
+#define STACK_HEAD(b, state) *(b)->top = (state)
 #define STACK_PUSH(b, state) TRACE(*(b)->top, *++(b)->top = (state))
 #define STACK_POP(b)         TRACE(*(b)->top, DECORATOR(*)--(b)->top)
-#define STACK_HEAD(b, state) TRACE(*(b)->top, *(b)->top = (state))
 
 #define BUFFER_COPY_CHAR(b, c, _pos, buf, bufsize)                            \
     do {                                                                      \
-        if ((b)->pos + (_pos) + 1 > (bufsize)) {                              \
+        if ((b)->pos + (_pos) + 1 + 1 > (bufsize)) {                          \
             return JSONB_ERROR_NOMEM;                                         \
         }                                                                     \
         (buf)[(b)->pos + (_pos)++] = (c);                                     \
+        (buf)[(b)->pos + (_pos)] = '\0';                                      \
     } while (0)
 #define BUFFER_COPY(b, value, len, _pos, buf, bufsize)                        \
     do {                                                                      \
         size_t i;                                                             \
-        if ((b)->pos + (_pos) + (len) > (bufsize)) {                          \
+        if ((b)->pos + (_pos) + (len) + 1 > (bufsize)) {                      \
             return JSONB_ERROR_NOMEM;                                         \
         }                                                                     \
         for (i = 0; i < (len); ++i)                                           \
             (buf)[(b)->pos + (_pos) + i] = (value)[i];                        \
         (_pos) += (len);                                                      \
+        (buf)[(b)->pos + (_pos)] = '\0';                                      \
     } while (0)
 
 void
@@ -270,10 +272,9 @@ jsonb_init(jsonb *b)
 jsonbcode
 jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
 {
-    enum jsonbstate next_state;
+    enum jsonbstate new_state;
     size_t pos = 0;
-    if (b->top - b->stack >= JSONB_MAX_DEPTH)
-        return JSONB_ERROR_STACK;
+    if (b->top - b->stack >= JSONB_MAX_DEPTH) return JSONB_ERROR_STACK;
     switch (*b->top) {
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
@@ -281,12 +282,12 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
     case JSONB_OBJECT_VALUE:
     case JSONB_ARRAY_VALUE_OR_CLOSE:
         if (*b->top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
-            next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
+            new_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
         else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
-            next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+            new_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
         break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        next_state = JSONB_DONE;
+        new_state = JSONB_DONE;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
@@ -296,7 +297,7 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '{', pos, buf, bufsize);
-    STACK_HEAD(b, next_state);
+    STACK_HEAD(b, new_state);
     STACK_PUSH(b, JSONB_OBJECT_KEY_OR_CLOSE);
     b->pos += pos;
     return JSONB_OK;
@@ -308,16 +309,14 @@ jsonb_pop_object(jsonb *b, char buf[], size_t bufsize)
     enum jsonbcode code;
     size_t pos = 0;
     switch (*b->top) {
-    case JSONB_DONE:
-        code = JSONB_END;
-        break;
     case JSONB_OBJECT_KEY_OR_CLOSE:
     case JSONB_OBJECT_NEXT_KEY_OR_CLOSE:
-        code = JSONB_OK;
+        code = b->top - 1 == b->stack ? JSONB_END : JSONB_OK;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
         /* fall-through */
+    case JSONB_DONE:
     case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
@@ -419,10 +418,9 @@ jsonb_push_key(
 jsonbcode
 jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
 {
-    enum jsonbstate next_state;
+    enum jsonbstate new_state;
     size_t pos = 0;
-    if (b->top - b->stack >= JSONB_MAX_DEPTH)
-        return JSONB_ERROR_STACK;
+    if (b->top - b->stack >= JSONB_MAX_DEPTH) return JSONB_ERROR_STACK;
     switch (*b->top) {
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
         BUFFER_COPY_CHAR(b, ',', pos, buf, bufsize);
@@ -430,12 +428,12 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
     case JSONB_OBJECT_VALUE:
     case JSONB_ARRAY_VALUE_OR_CLOSE:
         if (*b->top <= JSONB_OBJECT_NEXT_KEY_OR_CLOSE)
-            next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
+            new_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
         else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
-            next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
+            new_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
         break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
-        next_state = JSONB_DONE;
+        new_state = JSONB_DONE;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
@@ -444,7 +442,7 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '[', pos, buf, bufsize);
-    STACK_HEAD(b, next_state);
+    STACK_HEAD(b, new_state);
     STACK_PUSH(b, JSONB_ARRAY_VALUE_OR_CLOSE);
     b->pos += pos;
     return JSONB_OK;
@@ -456,16 +454,14 @@ jsonb_pop_array(jsonb *b, char buf[], size_t bufsize)
     enum jsonbcode code;
     size_t pos = 0;
     switch (*b->top) {
-    case JSONB_DONE:
-        code = JSONB_END;
-        break;
     case JSONB_ARRAY_VALUE_OR_CLOSE:
     case JSONB_ARRAY_NEXT_VALUE_OR_CLOSE:
-        code = JSONB_OK;
+        code = b->top - 1 == b->stack ? JSONB_END : JSONB_OK;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
         /* fall-through */
+    case JSONB_DONE:
     case JSONB_ERROR:
         return JSONB_ERROR_INPUT;
     }
