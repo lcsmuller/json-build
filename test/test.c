@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stddef.h>
 
+#define JSONB_MAX_DEPTH 4
+#define JSONB_DEBUG
 #include "json-build.h"
 
 #include "greatest.h"
@@ -10,45 +12,38 @@
 TEST
 check_valid_singles(void)
 {
-    char buf[2048] = { 0 };
+    char buf[2048];
     jsonb b;
 
     jsonb_init(&b);
     ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) >= 0);
     ASSERT(jsonb_pop_array(&b, buf, sizeof(buf)) >= 0);
     ASSERT_STR_EQ("[]", buf);
-    memset(buf, 0, sizeof(buf));
 
     jsonb_init(&b);
     ASSERT(jsonb_push_object(&b, buf, sizeof(buf)) >= 0);
     ASSERT(jsonb_pop_object(&b, buf, sizeof(buf)) >= 0);
     ASSERT_STR_EQ("{}", buf);
-    memset(buf, 0, sizeof(buf));
 
     jsonb_init(&b);
     ASSERT(jsonb_push_bool(&b, buf, sizeof(buf), 0) >= 0);
     ASSERT_STR_EQ("false", buf);
-    memset(buf, 0, sizeof(buf));
 
     jsonb_init(&b);
     ASSERT(jsonb_push_bool(&b, buf, sizeof(buf), 1) >= 0);
     ASSERT_STR_EQ("true", buf);
-    memset(buf, 0, sizeof(buf));
 
     jsonb_init(&b);
     ASSERT(jsonb_push_number(&b, buf, sizeof(buf), 10) >= 0);
     ASSERT_STR_EQ("10", buf);
-    memset(buf, 0, sizeof(buf));
 
     jsonb_init(&b);
     ASSERT(jsonb_push_string(&b, buf, sizeof(buf), "hi", 2) >= 0);
     ASSERT_STR_EQ("\"hi\"", buf);
-    memset(buf, 0, sizeof(buf));
 
     jsonb_init(&b);
     ASSERT(jsonb_push_null(&b, buf, sizeof(buf)) >= 0);
     ASSERT_STR_EQ("null", buf);
-    memset(buf, 0, sizeof(buf));
 
     PASS();
 }
@@ -56,7 +51,7 @@ check_valid_singles(void)
 TEST
 check_valid_array(void)
 {
-    char buf[2048] = { 0 };
+    char buf[2048];
     jsonb b;
 
     jsonb_init(&b);
@@ -80,7 +75,7 @@ check_valid_array(void)
 TEST
 check_valid_object(void)
 {
-    char buf[2048] = { 0 };
+    char buf[2048];
     jsonb b;
 
     jsonb_init(&b);
@@ -119,7 +114,7 @@ SUITE(valid_output)
 TEST
 check_deep_nesting_array(void)
 {
-    char buf[2048] = { 0 };
+    char buf[2048];
     jsonb b;
     int i;
 
@@ -134,7 +129,7 @@ check_deep_nesting_array(void)
 TEST
 check_deep_nesting_object(void)
 {
-    char buf[4096] = { 0 };
+    char buf[4096];
     jsonb b;
     int i;
 
@@ -153,7 +148,7 @@ check_deep_nesting_object(void)
 TEST
 check_deep_nesting_object_and_array(void)
 {
-    char buf[8192] = { 0 };
+    char buf[8192];
     jsonb b;
     int i;
 
@@ -194,7 +189,7 @@ check_string_escaping(void)
         ",\"\\n\\t\\t\"", ",\"\\b\\u0007\\u0007\\ttest\\n\"",
         ",\"end\"",
     };
-    char buf[1028] = { 0 };
+    char buf[1028];
     size_t i;
     jsonb b;
 
@@ -219,31 +214,30 @@ SUITE(string)
 TEST
 check_invalid_top_level_tokens_in_sequence(void)
 {
-    char buf[1028] = { 0 };
+    char buf[1028];
     jsonb b;
 
     jsonb_init(&b);
     jsonb_push_bool(&b, buf, sizeof(buf), 1);
-    ASSERT(jsonb_push_bool(&b, buf, sizeof(buf), 0) == JSONB_ERROR_INPUT);
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_bool(&b, buf, sizeof(buf), 0));
 
     jsonb_init(&b);
     jsonb_push_array(&b, buf, sizeof(buf));
     jsonb_pop_array(&b, buf, sizeof(buf));
-    ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_array(&b, buf, sizeof(buf)));
 
     jsonb_init(&b);
     jsonb_push_array(&b, buf, sizeof(buf));
     jsonb_pop_array(&b, buf, sizeof(buf));
-    ASSERT(jsonb_push_bool(&b, buf, sizeof(buf), 1) == JSONB_ERROR_INPUT);
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_bool(&b, buf, sizeof(buf), 1));
 
     jsonb_init(&b);
     jsonb_push_bool(&b, buf, sizeof(buf), 1);
-    ASSERT(jsonb_push_array(&b, buf, sizeof(buf)) == JSONB_ERROR_INPUT);
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_array(&b, buf, sizeof(buf)));
 
     jsonb_init(&b);
     jsonb_push_bool(&b, buf, sizeof(buf), 1);
-    ASSERT(jsonb_push_string(&b, buf, sizeof(buf), "", 0)
-           == JSONB_ERROR_INPUT);
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_string(&b, buf, sizeof(buf), "", 0));
 
     PASS();
 }
@@ -251,12 +245,12 @@ check_invalid_top_level_tokens_in_sequence(void)
 TEST
 check_not_enough_buffer_memory(void)
 {
-    char buf[128] = { 0 };
+    char buf[128];
     jsonb b;
 
     jsonb_init(&b);
-    ASSERT(jsonb_push_bool(&b, buf, 0, 1) == JSONB_ERROR_NOMEM);
-    ASSERT(jsonb_push_bool(&b, buf, sizeof(buf), 1) == JSONB_END);
+    ASSERT(JSONB_ERROR_NOMEM == jsonb_push_bool(&b, buf, 0, 1));
+    ASSERT(JSONB_END == jsonb_push_bool(&b, buf, sizeof(buf), 1));
 
     PASS();
 }
@@ -264,7 +258,7 @@ check_not_enough_buffer_memory(void)
 TEST
 check_out_of_bounds_access(void)
 {
-    char buf[1024] = { 0 };
+    char buf[1024];
     jsonb b;
 
     jsonb_init(&b);
@@ -276,11 +270,35 @@ check_out_of_bounds_access(void)
     PASS();
 }
 
+TEST
+check_no_operation_after_done(void)
+{
+    char buf[1024];
+    jsonb b;
+
+    jsonb_init(&b);
+    ASSERT(JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
+    ASSERT(JSONB_END == jsonb_pop_array(&b, buf, sizeof(buf)));
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_array(&b, buf, sizeof(buf)));
+
+    jsonb_init(&b);
+    ASSERT(JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
+    ASSERT(JSONB_END == jsonb_pop_object(&b, buf, sizeof(buf)));
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_object(&b, buf, sizeof(buf)));
+
+    jsonb_init(&b);
+    ASSERT(JSONB_END == jsonb_push_null(&b, buf, sizeof(buf)));
+    ASSERT(JSONB_ERROR_INPUT == jsonb_push_null(&b, buf, sizeof(buf)));
+
+    PASS();
+}
+
 SUITE(force_error)
 {
     RUN_TEST(check_invalid_top_level_tokens_in_sequence);
     RUN_TEST(check_not_enough_buffer_memory);
     RUN_TEST(check_out_of_bounds_access);
+    RUN_TEST(check_no_operation_after_done);
 }
 
 GREATEST_MAIN_DEFS();
