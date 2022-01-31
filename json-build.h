@@ -271,7 +271,6 @@ jsonbcode
 jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
 {
     enum jsonbstate next_state;
-    enum jsonbcode code;
     size_t pos = 0;
     if (b->top - b->stack >= JSONB_MAX_DEPTH)
         return JSONB_ERROR_STACK;
@@ -285,11 +284,9 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
             next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
         else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
             next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
-        code = JSONB_OK;
         break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         next_state = JSONB_DONE;
-        code = JSONB_END;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
@@ -302,7 +299,7 @@ jsonb_push_object(jsonb *b, char buf[], size_t bufsize)
     STACK_HEAD(b, next_state);
     STACK_PUSH(b, JSONB_OBJECT_KEY_OR_CLOSE);
     b->pos += pos;
-    return code;
+    return JSONB_OK;
 }
 
 jsonbcode
@@ -423,7 +420,6 @@ jsonbcode
 jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
 {
     enum jsonbstate next_state;
-    enum jsonbcode code;
     size_t pos = 0;
     if (b->top - b->stack >= JSONB_MAX_DEPTH)
         return JSONB_ERROR_STACK;
@@ -437,11 +433,9 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
             next_state = JSONB_OBJECT_NEXT_KEY_OR_CLOSE;
         else if (*b->top <= JSONB_ARRAY_NEXT_VALUE_OR_CLOSE)
             next_state = JSONB_ARRAY_NEXT_VALUE_OR_CLOSE;
-        code = JSONB_OK;
         break;
     case JSONB_ARRAY_OR_OBJECT_OR_VALUE:
         next_state = JSONB_DONE;
-        code = JSONB_END;
         break;
     default:
         STACK_HEAD(b, JSONB_ERROR);
@@ -453,7 +447,7 @@ jsonb_push_array(jsonb *b, char buf[], size_t bufsize)
     STACK_HEAD(b, next_state);
     STACK_PUSH(b, JSONB_ARRAY_VALUE_OR_CLOSE);
     b->pos += pos;
-    return code;
+    return JSONB_OK;
 }
 
 jsonbcode
