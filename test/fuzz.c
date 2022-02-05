@@ -33,43 +33,43 @@ main(void)
 
         switch (c % 9) {
         case 0:
-            r = jsonb_push_object(b, buf, z);
+            r = jsonb_object(b, buf, z);
             break;
         case 1:
-            r = jsonb_pop_object(b, buf, z);
+            r = jsonb_object_pop(b, buf, z);
             break;
         case 2:
             if (arg > cmdlen - i - 1) {
                 r = JSONB_ERROR_INPUT;
             }
             else {
-                r = jsonb_push_key(b, buf, z, cmd + i + 1, arg);
+                r = jsonb_key(b, buf, z, cmd + i + 1, arg);
                 i += arg;
             }
             break;
         case 3:
-            r = jsonb_push_array(b, buf, z);
+            r = jsonb_array(b, buf, z);
             break;
         case 4:
-            r = jsonb_pop_array(b, buf, z);
+            r = jsonb_array_pop(b, buf, z);
             break;
         case 5:
-            r = jsonb_push_bool(b, buf, z, arg % 2);
+            r = jsonb_bool(b, buf, z, arg % 2);
             break;
         case 6:
-            r = jsonb_push_null(b, buf, z);
+            r = jsonb_null(b, buf, z);
             break;
         case 7:
             if (arg > cmdlen - i - 1) {
                 r = JSONB_ERROR_INPUT;
             }
             else {
-                r = jsonb_push_string(b, buf, z, cmd + i + 1, arg);
+                r = jsonb_string(b, buf, z, cmd + i + 1, arg);
                 i += arg;
             }
             break;
         case 8:
-            r = jsonb_push_number(b, buf, z, arg / 28.0);
+            r = jsonb_number(b, buf, z, arg / 28.0);
             break;
         }
 

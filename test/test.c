@@ -15,34 +15,34 @@ check_valid_singles(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_END == jsonb_pop_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_array_pop(&b, buf, sizeof(buf)));
     ASSERT_STR_EQ("[]", buf);
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_END == jsonb_pop_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_object_pop(&b, buf, sizeof(buf)));
     ASSERT_STR_EQ("{}", buf);
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_END == jsonb_push_bool(&b, buf, sizeof(buf), 0));
+    ASSERTm(buf, JSONB_END == jsonb_bool(&b, buf, sizeof(buf), 0));
     ASSERT_STR_EQ("false", buf);
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_END == jsonb_push_bool(&b, buf, sizeof(buf), 1));
+    ASSERTm(buf, JSONB_END == jsonb_bool(&b, buf, sizeof(buf), 1));
     ASSERT_STR_EQ("true", buf);
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_END == jsonb_push_number(&b, buf, sizeof(buf), 10));
+    ASSERTm(buf, JSONB_END == jsonb_number(&b, buf, sizeof(buf), 10));
     ASSERT_STR_EQ("10", buf);
 
     jsonb_init(&b);
     ASSERTm(buf,
-            JSONB_END == jsonb_push_string(&b, buf, sizeof(buf), "hi", 2));
+            JSONB_END == jsonb_string(&b, buf, sizeof(buf), "hi", 2));
     ASSERT_STR_EQ("\"hi\"", buf);
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_END == jsonb_push_null(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_null(&b, buf, sizeof(buf)));
     ASSERT_STR_EQ("null", buf);
 
     PASS();
@@ -55,17 +55,17 @@ check_valid_array(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
     {
-        ASSERTm(buf, JSONB_OK == jsonb_push_bool(&b, buf, sizeof(buf), 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_bool(&b, buf, sizeof(buf), 0));
-        ASSERTm(buf, JSONB_OK == jsonb_push_null(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_OK == jsonb_push_number(&b, buf, sizeof(buf), 10));
+        ASSERTm(buf, JSONB_OK == jsonb_bool(&b, buf, sizeof(buf), 1));
+        ASSERTm(buf, JSONB_OK == jsonb_bool(&b, buf, sizeof(buf), 0));
+        ASSERTm(buf, JSONB_OK == jsonb_null(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_number(&b, buf, sizeof(buf), 10));
         ASSERTm(buf,
-                JSONB_OK == jsonb_push_string(&b, buf, sizeof(buf), "foo", 3));
-        ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_OK == jsonb_pop_object(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_END == jsonb_pop_array(&b, buf, sizeof(buf)));
+                JSONB_OK == jsonb_string(&b, buf, sizeof(buf), "foo", 3));
+        ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_object_pop(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_END == jsonb_array_pop(&b, buf, sizeof(buf)));
     }
 
     ASSERT_STR_EQ("[true,false,null,10,\"foo\",{}]", buf);
@@ -80,23 +80,23 @@ check_valid_object(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
     {
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "a", 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_bool(&b, buf, sizeof(buf), 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "b", 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_bool(&b, buf, sizeof(buf), 0));
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "c", 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_null(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "d", 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_number(&b, buf, sizeof(buf), 10));
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "e", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "a", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_bool(&b, buf, sizeof(buf), 1));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "b", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_bool(&b, buf, sizeof(buf), 0));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "c", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_null(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "d", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_number(&b, buf, sizeof(buf), 10));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "e", 1));
         ASSERTm(buf,
-                JSONB_OK == jsonb_push_string(&b, buf, sizeof(buf), "foo", 3));
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "f", 1));
-        ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_OK == jsonb_pop_array(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_END == jsonb_pop_object(&b, buf, sizeof(buf)));
+                JSONB_OK == jsonb_string(&b, buf, sizeof(buf), "foo", 3));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "f", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_array_pop(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_END == jsonb_object_pop(&b, buf, sizeof(buf)));
     }
 
     ASSERT_STR_EQ(
@@ -122,10 +122,10 @@ check_deep_nesting_array(void)
 
     jsonb_init(&b);
     for (i = 0; i < JSONB_MAX_DEPTH; ++i)
-        ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
     for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i)
-        ASSERTm(buf, JSONB_OK == jsonb_pop_array(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_END == jsonb_pop_array(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_array_pop(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_array_pop(&b, buf, sizeof(buf)));
 
     PASS();
 }
@@ -139,13 +139,13 @@ check_deep_nesting_object(void)
 
     jsonb_init(&b);
     for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i) {
-        ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
-        ASSERTm(buf, JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "a", 1));
+        ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "a", 1));
     }
-    ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
     for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i)
-        ASSERTm(buf, JSONB_OK == jsonb_pop_object(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_END == jsonb_pop_object(&b, buf, sizeof(buf)));
+        ASSERTm(buf, JSONB_OK == jsonb_object_pop(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_object_pop(&b, buf, sizeof(buf)));
 
     PASS();
 }
@@ -160,37 +160,37 @@ check_deep_nesting_object_and_array(void)
     jsonb_init(&b);
     for (i = 0; i < JSONB_MAX_DEPTH; ++i) {
         if (i % 2 == 0) {
-            ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
+            ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
             ASSERTm(buf,
-                    JSONB_OK == jsonb_push_key(&b, buf, sizeof(buf), "a", 1));
+                    JSONB_OK == jsonb_key(&b, buf, sizeof(buf), "a", 1));
         }
         else {
-            ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
+            ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
         }
     }
 
     if (JSONB_MAX_DEPTH % 2 != 0) {
-        ASSERTm(buf, jsonb_push_null(&b, buf, sizeof(buf)) == JSONB_OK);
+        ASSERTm(buf, jsonb_null(&b, buf, sizeof(buf)) == JSONB_OK);
         for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i) {
             if (i % 2 == 0)
                 ASSERTm(buf,
-                        JSONB_OK == jsonb_pop_object(&b, buf, sizeof(buf)));
+                        JSONB_OK == jsonb_object_pop(&b, buf, sizeof(buf)));
             else
                 ASSERTm(buf,
-                        JSONB_OK == jsonb_pop_array(&b, buf, sizeof(buf)));
+                        JSONB_OK == jsonb_array_pop(&b, buf, sizeof(buf)));
         }
     }
     else {
         for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i) {
             if (i % 2 == 0)
                 ASSERTm(buf,
-                        JSONB_OK == jsonb_pop_array(&b, buf, sizeof(buf)));
+                        JSONB_OK == jsonb_array_pop(&b, buf, sizeof(buf)));
             else
                 ASSERTm(buf,
-                        JSONB_OK == jsonb_pop_object(&b, buf, sizeof(buf)));
+                        JSONB_OK == jsonb_object_pop(&b, buf, sizeof(buf)));
         }
     }
-    ASSERTm(buf, JSONB_END == jsonb_pop_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_object_pop(&b, buf, sizeof(buf)));
 
     PASS();
 }
@@ -218,15 +218,15 @@ check_string_escaping(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
     for (i = 0; i < sizeof(strs) / sizeof(char *); ++i) {
         size_t len = strlen(strs[i]);
         size_t prev_pos = b.pos;
         ASSERTm(buf,
-                jsonb_push_string(&b, buf, sizeof(buf), strs[i], len) >= 0);
+                jsonb_string(&b, buf, sizeof(buf), strs[i], len) >= 0);
         ASSERT_STR_EQ(expect[i], buf + prev_pos);
     }
-    ASSERTm(buf, JSONB_END == jsonb_pop_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_array_pop(&b, buf, sizeof(buf)));
 
     PASS();
 }
@@ -243,29 +243,29 @@ check_invalid_top_level_tokens_in_sequence(void)
     jsonb b;
 
     jsonb_init(&b);
-    jsonb_push_bool(&b, buf, sizeof(buf), 1);
+    jsonb_bool(&b, buf, sizeof(buf), 1);
     ASSERTm(buf,
-            JSONB_ERROR_INPUT == jsonb_push_bool(&b, buf, sizeof(buf), 0));
+            JSONB_ERROR_INPUT == jsonb_bool(&b, buf, sizeof(buf), 0));
 
     jsonb_init(&b);
-    jsonb_push_array(&b, buf, sizeof(buf));
-    jsonb_pop_array(&b, buf, sizeof(buf));
-    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_push_array(&b, buf, sizeof(buf)));
+    jsonb_array(&b, buf, sizeof(buf));
+    jsonb_array_pop(&b, buf, sizeof(buf));
+    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_array(&b, buf, sizeof(buf)));
 
     jsonb_init(&b);
-    jsonb_push_array(&b, buf, sizeof(buf));
-    jsonb_pop_array(&b, buf, sizeof(buf));
+    jsonb_array(&b, buf, sizeof(buf));
+    jsonb_array_pop(&b, buf, sizeof(buf));
     ASSERTm(buf,
-            JSONB_ERROR_INPUT == jsonb_push_bool(&b, buf, sizeof(buf), 1));
+            JSONB_ERROR_INPUT == jsonb_bool(&b, buf, sizeof(buf), 1));
 
     jsonb_init(&b);
-    jsonb_push_bool(&b, buf, sizeof(buf), 1);
-    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_push_array(&b, buf, sizeof(buf)));
+    jsonb_bool(&b, buf, sizeof(buf), 1);
+    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_array(&b, buf, sizeof(buf)));
 
     jsonb_init(&b);
-    jsonb_push_bool(&b, buf, sizeof(buf), 1);
+    jsonb_bool(&b, buf, sizeof(buf), 1);
     ASSERTm(buf, JSONB_ERROR_INPUT
-                     == jsonb_push_string(&b, buf, sizeof(buf), "", 0));
+                     == jsonb_string(&b, buf, sizeof(buf), "", 0));
 
     PASS();
 }
@@ -277,8 +277,8 @@ check_not_enough_buffer_memory(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_ERROR_NOMEM == jsonb_push_bool(&b, buf, 0, 1));
-    ASSERTm(buf, JSONB_END == jsonb_push_bool(&b, buf, sizeof(buf), 1));
+    ASSERTm(buf, JSONB_ERROR_NOMEM == jsonb_bool(&b, buf, 0, 1));
+    ASSERTm(buf, JSONB_END == jsonb_bool(&b, buf, sizeof(buf), 1));
 
     PASS();
 }
@@ -291,7 +291,7 @@ check_out_of_bounds_access(void)
 
     jsonb_init(&b);
     while (1) {
-        if (JSONB_ERROR_STACK == jsonb_push_array(&b, buf, sizeof(buf))) break;
+        if (JSONB_ERROR_STACK == jsonb_array(&b, buf, sizeof(buf))) break;
     }
 
     PASS();
@@ -304,8 +304,8 @@ check_single_no_operation_after_done(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_END == jsonb_push_null(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_push_null(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_null(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_null(&b, buf, sizeof(buf)));
 
     PASS();
 }
@@ -317,9 +317,9 @@ check_array_no_operation_after_done(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_array(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_END == jsonb_pop_array(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_push_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_array(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_array_pop(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_array(&b, buf, sizeof(buf)));
 
     PASS();
 }
@@ -331,9 +331,9 @@ check_object_no_operation_after_done(void)
     jsonb b;
 
     jsonb_init(&b);
-    ASSERTm(buf, JSONB_OK == jsonb_push_object(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_END == jsonb_pop_object(&b, buf, sizeof(buf)));
-    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_push_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_OK == jsonb_object(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_END == jsonb_object_pop(&b, buf, sizeof(buf)));
+    ASSERTm(buf, JSONB_ERROR_INPUT == jsonb_object(&b, buf, sizeof(buf)));
 
     PASS();
 }

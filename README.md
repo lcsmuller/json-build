@@ -24,18 +24,18 @@ jsonb b;
 char buf[1024];
 
 jsonb_init(&b);
-jsonb_push_object(&b, buf, sizeof(buf));
+jsonb_object(&b, buf, sizeof(buf));
 {
-    jsonb_push_key(&b, buf, sizeof(buf), "foo", strlen("foo"));
-    jsonb_push_array(&b, buf, sizeof(buf));
+    jsonb_key(&b, buf, sizeof(buf), "foo", strlen("foo"));
+    jsonb_array(&b, buf, sizeof(buf));
     {
-        jsonb_push_number(&b, buf, sizeof(buf), 1);
-        jsonb_push_string(&b, buf, sizeof(buf), "hi", 2);
-        jsonb_push_bool(&b, buf, sizeof(buf), 0);
-        jsonb_push_null(&b, buf, sizeof(buf));
-        jsonb_pop_array(&b, buf, sizeof(buf));
+        jsonb_number(&b, buf, sizeof(buf), 1);
+        jsonb_string(&b, buf, sizeof(buf), "hi", 2);
+        jsonb_bool(&b, buf, sizeof(buf), 0);
+        jsonb_null(&b, buf, sizeof(buf));
+        jsonb_array_pop(&b, buf, sizeof(buf));
     }
-    jsonb_pop_object(&b, buf, sizeof(buf));
+    jsonb_object_pop(&b, buf, sizeof(buf));
 }
 printf("JSON: %s", buf); // JSON: {"foo":[1,"hi",false,null]}
 ```
@@ -58,16 +58,16 @@ API
 ---
 
 * `jsonb_init()` - initialize a jsonb handle
-* `jsonb_push_object()` - push an object to the builder stack
-* `jsonb_pop_object()` - pop an object from the builder stack
-* `jsonb_push_key()` - push an object key field to the builder stack
-* `jsonb_push_array()` - push an array to the builder stack
-* `jsonb_pop_array()` - pop an array from the builder stack
-* `jsonb_push_token()` - push a raw token to the builder stack
-* `jsonb_push_bool()` - push a boolean token to the builder stack
-* `jsonb_push_null()` - push a null token to the builder stack
-* `jsonb_push_string()` - push a string token to the builder stack
-* `jsonb_push_number()` - push a number token to the builder stack
+* `jsonb_object()` - push an object to the builder stack
+* `jsonb_object_pop()` - pop an object from the builder stack
+* `jsonb_key()` - push an object key field to the builder stack
+* `jsonb_array()` - push an array to the builder stack
+* `jsonb_array_pop()` - pop an array from the builder stack
+* `jsonb_token()` - push a raw token to the builder stack
+* `jsonb_bool()` - push a boolean token to the builder stack
+* `jsonb_null()` - push a null token to the builder stack
+* `jsonb_string()` - push a string token to the builder stack
+* `jsonb_number()` - push a number token to the builder stack
 
 The following are the possible return codes for the builder functions:
 * `JSONB_OK` - operation was a success, user can proceed with the next operation
