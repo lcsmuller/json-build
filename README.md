@@ -1,7 +1,8 @@
 # JSON-BUILD
 
-json-build is a zero-allocation JSON serializer compatible with C89. It is the
-counterpart of [jsmn-find](https://github.com/lcsmuller/jsmn-find).
+json-build is a zero-allocation JSON serializer written in ANSI C. Its
+tokenizer counterpart can be found at
+[jsmn-find](https://github.com/lcsmuller/jsmn-find).
 
 ## Features
 
