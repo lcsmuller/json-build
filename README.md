@@ -1,18 +1,15 @@
-JSON-BUILD
-==========
+# JSON-BUILD
 
-json-build is a zero-allocation JSON serializer compatible with C89. It is
-inspired by [jsmn](https://github.com/zserge/jsmn), a minimalistic JSON tokenizer.
+json-build is a zero-allocation JSON serializer compatible with C89. It is the
+counterpart of [jsmn-find](https://github.com/lcsmuller/jsmn-find).
 
-Features
---------
+## Features
 
 * compatible with C89
 * no dependencies
 * no dynamic memory allocation
 
-Usage
------
+## Usage
 
 Download `json-build.h`, include it, done.
 
@@ -54,8 +51,7 @@ for multiple C files, to avoid duplication of symbols you may define `JSONB_HEAD
 #include "json-build.h"
 ```
 
-API
----
+## API
 
 * `jsonb_init()` - initialize a jsonb handle
 * `jsonb_object()` - push an object to the builder stack
@@ -81,8 +77,7 @@ Its worth mentioning that all `JSONB_ERROR_` prefixed codes are negative.
 If you get `JSONB_ERROR_NOMEM` you can re-allocate a larger buffer and call
 the builder function once more.
 
-Other info
-----------
+## Other info
 
 This software is distributed under [MIT license](www.opensource.org/licenses/mit-license.php),
 so feel free to integrate it in your commercial products.

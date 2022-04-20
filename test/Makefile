@@ -3,7 +3,7 @@ CC ?= gcc
 
 EXES := test fuzz
 
-CFLAGS += -Wall -Wextra -Wpedantic -g -I$(TOP) -std=c99
+CFLAGS += -Wall -Wextra -Wpedantic -g -I$(TOP) -std=c89
 
 all: $(EXES)
 
