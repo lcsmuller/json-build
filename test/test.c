@@ -37,8 +37,7 @@ check_valid_singles(void)
     ASSERT_STR_EQ("10", buf);
 
     jsonb_init(&b);
-    ASSERT_EQm(buf,
-            JSONB_END, jsonb_string(&b, buf, sizeof(buf), "hi", 2));
+    ASSERT_EQm(buf, JSONB_END, jsonb_string(&b, buf, sizeof(buf), "hi", 2));
     ASSERT_STR_EQ("\"hi\"", buf);
 
     jsonb_init(&b);
@@ -61,8 +60,8 @@ check_valid_array(void)
         ASSERT_EQm(buf, JSONB_OK, jsonb_bool(&b, buf, sizeof(buf), 0));
         ASSERT_EQm(buf, JSONB_OK, jsonb_null(&b, buf, sizeof(buf)));
         ASSERT_EQm(buf, JSONB_OK, jsonb_number(&b, buf, sizeof(buf), 10));
-        ASSERT_EQm(buf,
-                JSONB_OK, jsonb_string(&b, buf, sizeof(buf), "foo", 3));
+        ASSERT_EQm(buf, JSONB_OK,
+                   jsonb_string(&b, buf, sizeof(buf), "foo", 3));
         ASSERT_EQm(buf, JSONB_OK, jsonb_object(&b, buf, sizeof(buf)));
         ASSERT_EQm(buf, JSONB_OK, jsonb_object_pop(&b, buf, sizeof(buf)));
         ASSERT_EQm(buf, JSONB_END, jsonb_array_pop(&b, buf, sizeof(buf)));
@@ -91,8 +90,8 @@ check_valid_object(void)
         ASSERT_EQm(buf, JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "d", 1));
         ASSERT_EQm(buf, JSONB_OK, jsonb_number(&b, buf, sizeof(buf), 10));
         ASSERT_EQm(buf, JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "e", 1));
-        ASSERT_EQm(buf,
-                JSONB_OK, jsonb_string(&b, buf, sizeof(buf), "foo", 3));
+        ASSERT_EQm(buf, JSONB_OK,
+                   jsonb_string(&b, buf, sizeof(buf), "foo", 3));
         ASSERT_EQm(buf, JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "f", 1));
         ASSERT_EQm(buf, JSONB_OK, jsonb_array(&b, buf, sizeof(buf)));
         ASSERT_EQm(buf, JSONB_OK, jsonb_array_pop(&b, buf, sizeof(buf)));
@@ -161,8 +160,7 @@ check_deep_nesting_object_and_array(void)
     for (i = 0; i < JSONB_MAX_DEPTH; ++i) {
         if (i % 2 == 0) {
             ASSERT_EQm(buf, JSONB_OK, jsonb_object(&b, buf, sizeof(buf)));
-            ASSERT_EQm(buf,
-                    JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "a", 1));
+            ASSERT_EQm(buf, JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "a", 1));
         }
         else {
             ASSERT_EQm(buf, JSONB_OK, jsonb_array(&b, buf, sizeof(buf)));
@@ -173,21 +171,21 @@ check_deep_nesting_object_and_array(void)
         ASSERT_EQm(buf, JSONB_OK, jsonb_null(&b, buf, sizeof(buf)));
         for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i) {
             if (i % 2 == 0)
-                ASSERT_EQm(buf,
-                        JSONB_OK, jsonb_object_pop(&b, buf, sizeof(buf)));
+                ASSERT_EQm(buf, JSONB_OK,
+                           jsonb_object_pop(&b, buf, sizeof(buf)));
             else
-                ASSERT_EQm(buf,
-                        JSONB_OK, jsonb_array_pop(&b, buf, sizeof(buf)));
+                ASSERT_EQm(buf, JSONB_OK,
+                           jsonb_array_pop(&b, buf, sizeof(buf)));
         }
     }
     else {
         for (i = 0; i < JSONB_MAX_DEPTH - 1; ++i) {
             if (i % 2 == 0)
-                ASSERT_EQm(buf,
-                        JSONB_OK, jsonb_array_pop(&b, buf, sizeof(buf)));
+                ASSERT_EQm(buf, JSONB_OK,
+                           jsonb_array_pop(&b, buf, sizeof(buf)));
             else
-                ASSERT_EQm(buf,
-                        JSONB_OK, jsonb_object_pop(&b, buf, sizeof(buf)));
+                ASSERT_EQm(buf, JSONB_OK,
+                           jsonb_object_pop(&b, buf, sizeof(buf)));
         }
     }
     ASSERT_EQm(buf, JSONB_END, jsonb_object_pop(&b, buf, sizeof(buf)));
@@ -222,8 +220,7 @@ check_string_escaping(void)
     for (i = 0; i < sizeof(strs) / sizeof(char *); ++i) {
         size_t len = strlen(strs[i]);
         size_t prev_pos = b.pos;
-        ASSERT_GTEm(buf,
-                jsonb_string(&b, buf, sizeof(buf), strs[i], len),  0);
+        ASSERT_GTEm(buf, jsonb_string(&b, buf, sizeof(buf), strs[i], len), 0);
         ASSERT_STR_EQ(expect[i], buf + prev_pos);
     }
     ASSERT_EQm(buf, JSONB_END, jsonb_array_pop(&b, buf, sizeof(buf)));
@@ -231,9 +228,86 @@ check_string_escaping(void)
     PASS();
 }
 
+TEST
+check_string_streaming(void)
+{
+    const char expect[] =
+        "{\"foo\":null,\"bar\":0,\"baz\":\"\",\"tuna\":{},\"spam\":[]}";
+    char buf[10] = { 0 }, dest[1024] = { 0 };
+    enum jsonbcode code;
+    int k;
+    jsonb b;
+
+    jsonb_init(&b);
+    /* 1 < 10 : '{' */
+    ASSERT_EQ(JSONB_OK, jsonb_object(&b, buf, sizeof(buf)));
+    /* 7 < 10 : '{"foo":' */
+    ASSERT_EQ(JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "foo", 3));
+    /* 11 > 10: '{"foo":null' */
+    for (k = 0; (code = jsonb_null(&b, buf, sizeof(buf))); k = 1) {
+        ASSERT_EQm("token can't fit alone in buffer", 0, k);
+        ASSERT_EQ(JSONB_ERROR_NOMEM, code);
+        strcat(dest, buf);
+        jsonb_reset(&b);
+    }
+    /* 10 == 10 : 'null,"bar":' */
+    for (k = 0; (code = jsonb_key(&b, buf, sizeof(buf), "bar", 3)); k = 1) {
+        ASSERT_EQm("token can't fit alone in buffer", 0, k);
+        ASSERT_EQ(JSONB_ERROR_NOMEM, code);
+        strcat(dest, buf);
+        jsonb_reset(&b);
+    }
+    /* 8 < 10 : ',"bar":0' */
+    ASSERT_EQ(JSONB_OK, jsonb_number(&b, buf, sizeof(buf), 0));
+    /* 15 > 10 : ',"bar":0,"baz":' */
+    for (k = 0; (code = jsonb_key(&b, buf, sizeof(buf), "baz", 3)); k = 1) {
+        ASSERT_EQm("token can't fit alone in buffer", 0, k);
+        ASSERT_EQ(JSONB_ERROR_NOMEM, code);
+        strcat(dest, buf);
+        jsonb_reset(&b);
+    }
+    /* 9 < 10 : ',"baz":""' */
+    ASSERT_EQ(JSONB_OK, jsonb_string(&b, buf, sizeof(buf), "", 0));
+    /* 17 > 10 : ',"baz":"","tuna":' */
+    for (k = 0; (code = jsonb_key(&b, buf, sizeof(buf), "tuna", 4)); k = 1) {
+        ASSERT_EQm("token can't fit alone in buffer", 0, k);
+        ASSERT_EQ(JSONB_ERROR_NOMEM, code);
+        strcat(dest, buf);
+        jsonb_reset(&b);
+    }
+    /* 9 < 10 : ',"tuna":{' */
+    ASSERT_EQ(JSONB_OK, jsonb_object(&b, buf, sizeof(buf)));
+    /* 10 == 10 : ',"tuna":{}' */
+    for (k = 0; (code = jsonb_object_pop(&b, buf, sizeof(buf))); k = 1) {
+        ASSERT_EQm("token can't fit alone in buffer", 0, k);
+        ASSERT_EQ(JSONB_ERROR_NOMEM, code);
+        strcat(dest, buf);
+        jsonb_reset(&b);
+    }
+    /* 9 < 10 : '},"spam":' */
+    ASSERT_EQ(JSONB_OK, jsonb_key(&b, buf, sizeof(buf), "spam", 4));
+    /* 10 == 10 : '},"spam":[' */
+    for (k = 0; (code = jsonb_array(&b, buf, sizeof(buf))); k = 1) {
+        ASSERT_EQm("token can't fit alone in buffer", 0, k);
+        ASSERT_EQ(JSONB_ERROR_NOMEM, code);
+        strcat(dest, buf);
+        jsonb_reset(&b);
+    }
+    /* 2 < 10 : '[]' */
+    ASSERT_EQ(JSONB_OK, jsonb_array_pop(&b, buf, sizeof(buf)));
+    /* 3 < 10 : '[]}' */
+    ASSERT_EQ(JSONB_END, jsonb_object_pop(&b, buf, sizeof(buf)));
+    strcat(dest, buf);
+
+    ASSERT_STR_EQ(expect, dest);
+
+    PASS();
+}
+
 SUITE(string)
 {
     RUN_TEST(check_string_escaping);
+    RUN_TEST(check_string_streaming);
 }
 
 TEST
@@ -244,8 +318,7 @@ check_invalid_top_level_tokens_in_sequence(void)
 
     jsonb_init(&b);
     jsonb_bool(&b, buf, sizeof(buf), 1);
-    ASSERT_EQm(buf,
-            JSONB_ERROR_INPUT, jsonb_bool(&b, buf, sizeof(buf), 0));
+    ASSERT_EQm(buf, JSONB_ERROR_INPUT, jsonb_bool(&b, buf, sizeof(buf), 0));
 
     jsonb_init(&b);
     jsonb_array(&b, buf, sizeof(buf));
@@ -255,8 +328,7 @@ check_invalid_top_level_tokens_in_sequence(void)
     jsonb_init(&b);
     jsonb_array(&b, buf, sizeof(buf));
     jsonb_array_pop(&b, buf, sizeof(buf));
-    ASSERT_EQm(buf,
-            JSONB_ERROR_INPUT, jsonb_bool(&b, buf, sizeof(buf), 1));
+    ASSERT_EQm(buf, JSONB_ERROR_INPUT, jsonb_bool(&b, buf, sizeof(buf), 1));
 
     jsonb_init(&b);
     jsonb_bool(&b, buf, sizeof(buf), 1);
@@ -264,8 +336,8 @@ check_invalid_top_level_tokens_in_sequence(void)
 
     jsonb_init(&b);
     jsonb_bool(&b, buf, sizeof(buf), 1);
-    ASSERT_EQm(buf,
-            JSONB_ERROR_INPUT, jsonb_string(&b, buf, sizeof(buf), "", 0));
+    ASSERT_EQm(buf, JSONB_ERROR_INPUT,
+               jsonb_string(&b, buf, sizeof(buf), "", 0));
 
     PASS();
 }

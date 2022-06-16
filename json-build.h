@@ -26,7 +26,7 @@ extern "C" {
  *
  * #define JSONB_MAX_DEPTH 256
  * #include "json-build.h"
- * */  
+ */ 
 #define JSONB_MAX_DEPTH 128
 #endif /* JSONB_MAX_DEPTH */
 
@@ -59,13 +59,22 @@ enum jsonbstate {
 
 /** @brief Handle for building a JSON string */
 typedef struct jsonb {
-    /** expected next input */
+    /** state stack to keep track and enforce next inputs */
     enum jsonbstate stack[JSONB_MAX_DEPTH + 1];
     /** pointer to stack top */
     enum jsonbstate *top;
     /** offset in the JSON buffer (current length) */
     size_t pos;
 } jsonb;
+
+/**
+ * @brief Reset a jsonb handle buffer's position tracker (for streaming purposes)
+ * @note Should be used in conjunction with @ref JSONB_ERROR_NOMEM if the
+ *      buffer is meant to be used as a stream
+ *
+ * @param builder pointer to the @ref jsonb handle
+ */
+#define jsonb_reset(builder) ((builder)->pos = 0)
 
 /**
  * @brief Initialize a jsonb handle
@@ -235,6 +244,7 @@ _jsonb_eval_state(enum jsonbstate state)
 #define BUFFER_COPY_CHAR(b, c, _pos, buf, bufsize)                            \
     do {                                                                      \
         if ((b)->pos + (_pos) + 1 + 1 > (bufsize)) {                          \
+            (buf)[(b)->pos] = '\0';                                           \
             return JSONB_ERROR_NOMEM;                                         \
         }                                                                     \
         (buf)[(b)->pos + (_pos)++] = (c);                                     \
@@ -244,6 +254,7 @@ _jsonb_eval_state(enum jsonbstate state)
     do {                                                                      \
         size_t i;                                                             \
         if ((b)->pos + (_pos) + (len) + 1 > (bufsize)) {                      \
+            (buf)[(b)->pos] = '\0';                                           \
             return JSONB_ERROR_NOMEM;                                         \
         }                                                                     \
         for (i = 0; i < (len); ++i)                                           \

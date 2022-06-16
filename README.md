@@ -55,6 +55,7 @@ for multiple C files, to avoid duplication of symbols you may define `JSONB_HEAD
 ## API
 
 * `jsonb_init()` - initialize a jsonb handle
+* `jsonb_reset()` - reset the buffer's position tracker for streaming purposes
 * `jsonb_object()` - push an object to the builder stack
 * `jsonb_object_pop()` - pop an object from the builder stack
 * `jsonb_key()` - push an object key field to the builder stack
@@ -75,8 +76,9 @@ The following are the possible return codes for the builder functions:
 
 Its worth mentioning that all `JSONB_ERROR_` prefixed codes are negative.
 
-If you get `JSONB_ERROR_NOMEM` you can re-allocate a larger buffer and call
-the builder function once more.
+If you get `JSONB_ERROR_NOMEM` you can either:
+1. re-allocate a larger buffer and call the builder function once more
+2. call `jsonb_reset()` to reset the buffer's position tracker and call the builder function once more (useful for streaming with a fixed sized buffer!)
 
 ## Other info
 
