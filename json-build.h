@@ -371,7 +371,10 @@ second_iter:
         }
     }
 
-    if (*pos + len + extra_bytes > bufsize) return JSONB_ERROR_NOMEM;
+    if (*pos + len + extra_bytes > bufsize) {
+        *buf = '\0';
+        return JSONB_ERROR_NOMEM;
+    }
 
     if (esc_buf) {
         *pos += len + extra_bytes;
@@ -400,7 +403,7 @@ jsonb_key(jsonb *b, char buf[], size_t bufsize, const char key[], size_t len)
     case JSONB_OBJECT_KEY_OR_CLOSE: {
         enum jsonbcode ret;
         BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
-        ret = _jsonb_escape(&pos, buf + b->pos, bufsize, key, len);
+        ret = _jsonb_escape(&pos, buf + b->pos, bufsize - b->pos, key, len);
         if (ret != JSONB_OK) return ret;
         BUFFER_COPY(b, "\":", 2, pos, buf, bufsize);
         STACK_HEAD(b, JSONB_OBJECT_VALUE);
@@ -551,7 +554,7 @@ jsonb_string(
         return JSONB_ERROR_INPUT;
     }
     BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
-    ret = _jsonb_escape(&pos, buf + b->pos, bufsize, str, len);
+    ret = _jsonb_escape(&pos, buf + b->pos, bufsize - b->pos, str, len);
     if (ret != JSONB_OK) return ret;
     BUFFER_COPY_CHAR(b, '"', pos, buf, bufsize);
     STACK_HEAD(b, next_state);

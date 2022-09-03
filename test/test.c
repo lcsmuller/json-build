@@ -229,6 +229,27 @@ check_string_escaping(void)
 }
 
 TEST
+check_string_escaping_bounds(void)
+{
+    const char str[] = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+    char buf[(sizeof("{}") - 1)
+             + 4 * ((sizeof("\"\"") - 1) + (sizeof(str) - 1))];
+    jsonb b;
+
+    jsonb_init(&b);
+    jsonb_object(&b, buf, sizeof(buf));
+    ASSERT_EQm(buf, JSONB_OK,
+               jsonb_key(&b, buf, sizeof(buf), str, sizeof(str) - 1));
+    ASSERT_EQm(buf, JSONB_OK,
+               jsonb_string(&b, buf, sizeof(buf), str, sizeof(str) - 1));
+    ASSERT_EQm(buf, JSONB_ERROR_NOMEM,
+               jsonb_key(&b, buf, sizeof(buf), str, sizeof(str) - 1));
+    fprintf(stderr, "%s", buf);
+
+    PASS();
+}
+
+TEST
 check_string_streaming(void)
 {
     const char expect[] =
@@ -307,6 +328,7 @@ check_string_streaming(void)
 SUITE(string)
 {
     RUN_TEST(check_string_escaping);
+    RUN_TEST(check_string_escaping_bounds);
     RUN_TEST(check_string_streaming);
 }
 
