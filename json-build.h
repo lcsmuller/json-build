@@ -327,7 +327,7 @@ jsonb_object_pop(jsonb *b, char buf[], size_t bufsize)
     return code;
 }
 
-static long
+static jsonbcode
 _jsonb_escape(
     size_t *pos, char buf[], size_t bufsize, const char str[], size_t len)
 {

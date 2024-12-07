@@ -1,5 +1,5 @@
 TOP = ..
-CC ?= gcc
+CC = cc
 
 EXES = test fuzz
 
