@@ -38,6 +38,40 @@ jsonb_object(&b, buf, sizeof(buf));
 printf("JSON: %s", buf); // JSON: {"foo":[1,"hi",false,null]}
 ```
 
+## Automatic Buffer Management
+
+For dynamic buffer management, json-build provides `_auto` counterparts for all serializer functions.
+These functions will automatically reallocate the buffer when more space is needed:
+
+```c
+#include "json-build.h"
+#include <stdlib.h>
+
+...
+jsonb b;
+char *buf = malloc(64); // Initial small buffer
+size_t bufsize = 64;
+
+jsonb_init(&b);
+jsonb_object_auto(&b, &buf, &bufsize); // Note: passing pointers to buffer and size
+{
+    jsonb_key_auto(&b, &buf, &bufsize, "foo", strlen("foo"));
+    jsonb_array_auto(&b, &buf, &bufsize);
+    {
+        jsonb_number_auto(&b, &buf, &bufsize, 1);
+        jsonb_string_auto(&b, &buf, &bufsize, "hi", 2);
+        jsonb_bool_auto(&b, &buf, &bufsize, 0);
+        jsonb_null_auto(&b, &buf, &bufsize);
+        jsonb_array_pop_auto(&b, &buf, &bufsize);
+    }
+    jsonb_object_pop_auto(&b, &buf, &bufsize);
+}
+printf("JSON: %s (buffer size: %zu)\n", buf, bufsize);
+free(buf);
+```
+
+**IMPORTANT**: Do not mix regular and `_auto` functions on the same buffer. Always use either the regular functions with a fixed-size buffer or the `_auto` functions with a dynamically allocated buffer throughout your code.
+
 Since json-build is a single-header, header-only library, for more complex use
 cases you might need to define additional macros. `#define JSONB_STATIC`hides all
 json-build API symbols by making them static. Also, if you want to include `json-build.h`
@@ -70,9 +104,10 @@ for multiple C files, to avoid duplication of symbols you may define `JSONB_HEAD
 The following are the possible return codes for the builder functions:
 * `JSONB_OK` - operation was a success, user can proceed with the next operation
 * `JSONB_END` - operation was a success, JSON is complete and expects no more operations
-* `JSONB_ERROR_NOMEM` - buffer is not large enough
+* `JSONB_ERROR_NOMEM` - buffer is not large enough, or `_auto` function couldn't reallocate
 * `JSONB_ERROR_INPUT` - user action don't match expected next token
 * `JSONB_ERROR_STACK` - user action would lead to out of boundaries access, increase `JSONB_MAX_DEPTH`!
+* `JSONB_ERROR_OVERFLOW` - automatic buffer increase would lead to an overflow, only use with `_auto` functions
 
 Its worth mentioning that all `JSONB_ERROR_` prefixed codes are negative.
 

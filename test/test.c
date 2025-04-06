@@ -11,7 +11,7 @@
 TEST
 check_valid_singles(void)
 {
-    char buf[2048];
+    static char buf[2048];
     jsonb b;
 
     jsonb_init(&b);
@@ -50,7 +50,7 @@ check_valid_singles(void)
 TEST
 check_valid_array(void)
 {
-    char buf[2048];
+    static char buf[2048];
     jsonb b;
 
     jsonb_init(&b);
@@ -75,7 +75,7 @@ check_valid_array(void)
 TEST
 check_valid_object(void)
 {
-    char buf[2048];
+    static char buf[2048];
     jsonb b;
 
     jsonb_init(&b);
@@ -115,7 +115,7 @@ SUITE(valid_output)
 TEST
 check_deep_nesting_array(void)
 {
-    char buf[JSONB_MAX_DEPTH * sizeof("[]")];
+    static char buf[JSONB_MAX_DEPTH * sizeof("[]")];
     jsonb b;
     int i;
 
@@ -132,7 +132,7 @@ check_deep_nesting_array(void)
 TEST
 check_deep_nesting_object(void)
 {
-    char buf[JSONB_MAX_DEPTH * (sizeof("{}") + sizeof("\"a\":"))];
+    static char buf[JSONB_MAX_DEPTH * (sizeof("{}") + sizeof("\"a\":"))];
     jsonb b;
     int i;
 
@@ -152,7 +152,7 @@ check_deep_nesting_object(void)
 TEST
 check_deep_nesting_object_and_array(void)
 {
-    char buf[JSONB_MAX_DEPTH * (sizeof("[{}]") + sizeof("\"a\":"))];
+    static char buf[JSONB_MAX_DEPTH * (sizeof("[{}]") + sizeof("\"a\":"))];
     jsonb b;
     int i;
 
@@ -203,15 +203,15 @@ SUITE(nesting)
 TEST
 check_string_escaping(void)
 {
-    char *const strs[] = {
+    static const char *const strs[] = {
         "begin", "\nhi\n", "\n\t\t", "\b\a\a\ttest\n", "end",
     };
-    char *const expect[] = {
+    static const char *const expect[] = {
         "\"begin\"",      ",\"\\nhi\\n\"",
         ",\"\\n\\t\\t\"", ",\"\\b\\u0007\\u0007\\ttest\\n\"",
         ",\"end\"",
     };
-    char buf[1028];
+    static char buf[1028];
     size_t i;
     jsonb b;
 
@@ -231,9 +231,9 @@ check_string_escaping(void)
 TEST
 check_string_escaping_bounds(void)
 {
-    const char str[] = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-    char buf[(sizeof("{}") - 1)
-             + 4 * ((sizeof("\"\"") - 1) + (sizeof(str) - 1))];
+    static const char str[] = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+    static char buf[(sizeof("{}") - 1)
+                    + 4 * ((sizeof("\"\"") - 1) + (sizeof(str) - 1))];
     jsonb b;
 
     jsonb_init(&b);
@@ -252,9 +252,9 @@ check_string_escaping_bounds(void)
 TEST
 check_string_streaming(void)
 {
-    const char expect[] =
+    static const char expect[] =
         "{\"foo\":null,\"bar\":0,\"baz\":\"\",\"tuna\":{},\"spam\":[]}";
-    char buf[10] = { 0 }, dest[1024] = { 0 };
+    static char buf[10] = { 0 }, dest[1024] = { 0 };
     enum jsonbcode code;
     int k;
     jsonb b;
@@ -335,7 +335,7 @@ SUITE(string)
 TEST
 check_invalid_top_level_tokens_in_sequence(void)
 {
-    char buf[1028];
+    static char buf[1028];
     jsonb b;
 
     jsonb_init(&b);
@@ -367,7 +367,7 @@ check_invalid_top_level_tokens_in_sequence(void)
 TEST
 check_not_enough_buffer_memory(void)
 {
-    char buf[128];
+    static char buf[128];
     jsonb b;
 
     jsonb_init(&b);
@@ -380,7 +380,7 @@ check_not_enough_buffer_memory(void)
 TEST
 check_out_of_bounds_access(void)
 {
-    char buf[JSONB_MAX_DEPTH * sizeof("[")];
+    static char buf[JSONB_MAX_DEPTH * sizeof("[")];
     jsonb b;
 
     jsonb_init(&b);
@@ -394,7 +394,7 @@ check_out_of_bounds_access(void)
 TEST
 check_single_no_operation_after_done(void)
 {
-    char buf[1024];
+    static char buf[1024];
     jsonb b;
 
     jsonb_init(&b);
@@ -407,7 +407,7 @@ check_single_no_operation_after_done(void)
 TEST
 check_array_no_operation_after_done(void)
 {
-    char buf[1024];
+    static char buf[1024];
     jsonb b;
 
     jsonb_init(&b);
@@ -421,7 +421,7 @@ check_array_no_operation_after_done(void)
 TEST
 check_object_no_operation_after_done(void)
 {
-    char buf[1024];
+    static char buf[1024];
     jsonb b;
 
     jsonb_init(&b);

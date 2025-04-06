@@ -1,7 +1,7 @@
 TOP = ..
 CC = cc
 
-EXES = test fuzz
+EXES = test test_auto fuzz
 
 CFLAGS += -Wall -Wextra -Wpedantic -g -I$(TOP) -std=c89
 
