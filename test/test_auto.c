@@ -12,39 +12,60 @@
 TEST
 check_auto_singles(void)
 {
-    char *buf = malloc(16);
-    size_t bufsize = 16;
+    char *buf = NULL;
+    size_t bufsize = 0;
     jsonb b;
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_OK, jsonb_array_auto(&b, &buf, &bufsize));
     ASSERT_EQm(buf, JSONB_END, jsonb_array_pop_auto(&b, &buf, &bufsize));
     ASSERT_STR_EQ("[]", buf);
+    ASSERT_EQ(sizeof("[]") - 1, b.pos);
+    ASSERT_EQ(sizeof("[]") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_OK, jsonb_object_auto(&b, &buf, &bufsize));
     ASSERT_EQm(buf, JSONB_END, jsonb_object_pop_auto(&b, &buf, &bufsize));
     ASSERT_STR_EQ("{}", buf);
+    ASSERT_EQ(sizeof("{}") - 1, b.pos);
+    ASSERT_EQ(sizeof("{}") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_bool_auto(&b, &buf, &bufsize, 0));
     ASSERT_STR_EQ("false", buf);
+    ASSERT_EQ(sizeof("false") - 1, b.pos);
+    ASSERT_EQ(sizeof("false") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_bool_auto(&b, &buf, &bufsize, 1));
     ASSERT_STR_EQ("true", buf);
+    ASSERT_EQ(sizeof("true") - 1, b.pos);
+    ASSERT_EQ(sizeof("true") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_number_auto(&b, &buf, &bufsize, 10));
     ASSERT_STR_EQ("10", buf);
+    ASSERT_EQ(sizeof("10") - 1, b.pos);
+    ASSERT_EQ(sizeof("10") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_string_auto(&b, &buf, &bufsize, "hi", 2));
     ASSERT_STR_EQ("\"hi\"", buf);
+    ASSERT_EQ(sizeof("\"hi\"") - 1, b.pos);
+    ASSERT_EQ(sizeof("\"hi\"") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_null_auto(&b, &buf, &bufsize));
     ASSERT_STR_EQ("null", buf);
+    ASSERT_EQ(sizeof("null") - 1, b.pos);
+    ASSERT_EQ(sizeof("null") - 1, strlen(buf));
+    ASSERT_GT(bufsize, b.pos);
 
     free(buf);
     PASS();
@@ -53,6 +74,7 @@ check_auto_singles(void)
 TEST
 check_auto_array_realloc(void)
 {
+    static const char expected[] = "[true,false,null,10,\"foo\",{}]";
     char *buf = malloc(4);
     size_t bufsize = 4;
     size_t original_size = bufsize;
@@ -72,8 +94,11 @@ check_auto_array_realloc(void)
         ASSERT_EQm(buf, JSONB_END, jsonb_array_pop_auto(&b, &buf, &bufsize));
     }
 
-    ASSERT_STR_EQ("[true,false,null,10,\"foo\",{}]", buf);
+    ASSERT_STR_EQ(expected, buf);
     ASSERT_GT(bufsize, original_size);
+    ASSERT_GT(bufsize, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, strlen(buf));
 
     free(buf);
     PASS();
@@ -82,8 +107,10 @@ check_auto_array_realloc(void)
 TEST
 check_auto_object_realloc(void)
 {
-    char *buf = malloc(4);
-    size_t bufsize = 4;
+    static const char expected[] =
+        "{\"a\":true,\"b\":false,\"c\":null,\"d\":10,\"e\":\"foo\",\"f\":[]}";
+    char *buf = NULL;
+    size_t bufsize = 0;
     size_t original_size = bufsize;
     jsonb b;
 
@@ -107,10 +134,11 @@ check_auto_object_realloc(void)
         ASSERT_EQm(buf, JSONB_END, jsonb_object_pop_auto(&b, &buf, &bufsize));
     }
 
-    ASSERT_STR_EQ(
-        "{\"a\":true,\"b\":false,\"c\":null,\"d\":10,\"e\":\"foo\",\"f\":[]}",
-        buf);
+    ASSERT_STR_EQ(expected, buf);
     ASSERT_GT(bufsize, original_size);
+    ASSERT_GT(bufsize, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, strlen(buf));
 
     free(buf);
     PASS();
@@ -119,6 +147,9 @@ check_auto_object_realloc(void)
 TEST
 check_auto_string_escaping(void)
 {
+    static const char expected[] = "[\"begin\",\"\\nhi\\n\",\"\\n\\t\\t\","
+                                   "\"\\b\\u0007\\u0007\\ttest\\n\","
+                                   "\"end\"]";
     char *buf = malloc(8);
     size_t bufsize = 8;
     static const char *const strs[] = {
@@ -136,9 +167,10 @@ check_auto_string_escaping(void)
     }
     ASSERT_EQm(buf, JSONB_END, jsonb_array_pop_auto(&b, &buf, &bufsize));
 
-    ASSERT_STR_EQ("[\"begin\",\"\\nhi\\n\",\"\\n\\t\\t\","
-                  "\"\\b\\u0007\\u0007\\ttest\\n\",\"end\"]",
-                  buf);
+    ASSERT_STR_EQ(expected, buf);
+    ASSERT_GT(bufsize, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, strlen(buf));
 
     free(buf);
     PASS();
@@ -147,6 +179,8 @@ check_auto_string_escaping(void)
 TEST
 check_auto_nested_with_realloc(void)
 {
+    static const char expected[] =
+        "{\"nested\":{\"array\":[1,2,3],\"object\":{\"x\":\"y\"}}}";
     char *buf = malloc(4);
     size_t bufsize = 4;
     size_t original_size = bufsize;
@@ -189,9 +223,11 @@ check_auto_nested_with_realloc(void)
         ASSERT_EQm(buf, JSONB_END, jsonb_object_pop_auto(&b, &buf, &bufsize));
     }
 
-    ASSERT_STR_EQ("{\"nested\":{\"array\":[1,2,3],\"object\":{\"x\":\"y\"}}}",
-                  buf);
+    ASSERT_STR_EQ(expected, buf);
     ASSERT_GT(bufsize, original_size);
+    ASSERT_GT(bufsize, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, strlen(buf));
 
     free(buf);
     PASS();
@@ -201,8 +237,8 @@ TEST
 check_auto_large_string(void)
 {
     char *longString = malloc(1000);
-    char *buf = malloc(8);
-    size_t bufsize = 8;
+    char *buf = NULL;
+    size_t bufsize = 0;
     size_t original_size = bufsize;
     jsonb b;
     int i;

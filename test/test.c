@@ -18,31 +18,45 @@ check_valid_singles(void)
     ASSERT_EQm(buf, JSONB_OK, jsonb_array(&b, buf, sizeof(buf)));
     ASSERT_EQm(buf, JSONB_END, jsonb_array_pop(&b, buf, sizeof(buf)));
     ASSERT_STR_EQ("[]", buf);
+    ASSERT_EQ(sizeof("[]") - 1, b.pos);
+    ASSERT_EQ(sizeof("[]") - 1, strlen(buf));
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_OK, jsonb_object(&b, buf, sizeof(buf)));
     ASSERT_EQm(buf, JSONB_END, jsonb_object_pop(&b, buf, sizeof(buf)));
     ASSERT_STR_EQ("{}", buf);
+    ASSERT_EQ(sizeof("{}") - 1, b.pos);
+    ASSERT_EQ(sizeof("{}") - 1, strlen(buf));
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_bool(&b, buf, sizeof(buf), 0));
     ASSERT_STR_EQ("false", buf);
+    ASSERT_EQ(sizeof("false") - 1, b.pos);
+    ASSERT_EQ(sizeof("false") - 1, strlen(buf));
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_bool(&b, buf, sizeof(buf), 1));
     ASSERT_STR_EQ("true", buf);
+    ASSERT_EQ(sizeof("true") - 1, b.pos);
+    ASSERT_EQ(sizeof("true") - 1, strlen(buf));
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_number(&b, buf, sizeof(buf), 10));
     ASSERT_STR_EQ("10", buf);
+    ASSERT_EQ(sizeof("10") - 1, b.pos);
+    ASSERT_EQ(sizeof("10") - 1, strlen(buf));
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_string(&b, buf, sizeof(buf), "hi", 2));
     ASSERT_STR_EQ("\"hi\"", buf);
+    ASSERT_EQ(sizeof("\"hi\"") - 1, b.pos);
+    ASSERT_EQ(sizeof("\"hi\"") - 1, strlen(buf));
 
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_END, jsonb_null(&b, buf, sizeof(buf)));
     ASSERT_STR_EQ("null", buf);
+    ASSERT_EQ(sizeof("null") - 1, b.pos);
+    ASSERT_EQ(sizeof("null") - 1, strlen(buf));
 
     PASS();
 }
@@ -50,6 +64,7 @@ check_valid_singles(void)
 TEST
 check_valid_array(void)
 {
+    static const char expected[] = "[true,false,null,10,\"foo\",{}]";
     static char buf[2048];
     jsonb b;
 
@@ -67,7 +82,9 @@ check_valid_array(void)
         ASSERT_EQm(buf, JSONB_END, jsonb_array_pop(&b, buf, sizeof(buf)));
     }
 
-    ASSERT_STR_EQ("[true,false,null,10,\"foo\",{}]", buf);
+    ASSERT_STR_EQ(expected, buf);
+    ASSERT_EQ(sizeof(expected) - 1, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, strlen(buf));
 
     PASS();
 }
@@ -75,6 +92,8 @@ check_valid_array(void)
 TEST
 check_valid_object(void)
 {
+    static const char expected[] =
+        "{\"a\":true,\"b\":false,\"c\":null,\"d\":10,\"e\":\"foo\",\"f\":[]}";
     static char buf[2048];
     jsonb b;
 
@@ -98,9 +117,9 @@ check_valid_object(void)
         ASSERT_EQm(buf, JSONB_END, jsonb_object_pop(&b, buf, sizeof(buf)));
     }
 
-    ASSERT_STR_EQ(
-        "{\"a\":true,\"b\":false,\"c\":null,\"d\":10,\"e\":\"foo\",\"f\":[]}",
-        buf);
+    ASSERT_STR_EQ(expected, buf);
+    ASSERT_EQ(sizeof(expected) - 1, b.pos);
+    ASSERT_EQ(sizeof(expected) - 1, strlen(buf));
 
     PASS();
 }
@@ -218,8 +237,7 @@ check_string_escaping(void)
     jsonb_init(&b);
     ASSERT_EQm(buf, JSONB_OK, jsonb_array(&b, buf, sizeof(buf)));
     for (i = 0; i < sizeof(strs) / sizeof(char *); ++i) {
-        size_t len = strlen(strs[i]);
-        size_t prev_pos = b.pos;
+        size_t len = strlen(strs[i]), prev_pos = b.pos;
         ASSERT_GTEm(buf, jsonb_string(&b, buf, sizeof(buf), strs[i], len), 0);
         ASSERT_STR_EQ(expect[i], buf + prev_pos);
     }
@@ -244,7 +262,6 @@ check_string_escaping_bounds(void)
                jsonb_string(&b, buf, sizeof(buf), str, sizeof(str) - 1));
     ASSERT_EQm(buf, JSONB_ERROR_NOMEM,
                jsonb_key(&b, buf, sizeof(buf), str, sizeof(str) - 1));
-    fprintf(stderr, "%s", buf);
 
     PASS();
 }
